@@ -1,6 +1,8 @@
 #ifndef __AUTOMATON_H__
 #define __AUTOMATON_H__
 
+#include "settings.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -24,10 +26,11 @@ typedef struct automaton {
 } automaton_t;
 
 void automaton_init(automaton_t *a, unsigned short state_n);
+void automaton_destroy(automaton_t *a);
 
 void automaton_reset(automaton_t *a);
 
-void automaton_play(automaton_t *a1, automaton_t *a2, int turn_n);
+void automaton_play(automaton_t *a1, automaton_t *a2, settings_t *settings);
 
 void automaton_cross(
   automaton_t       *a,

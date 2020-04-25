@@ -2,12 +2,12 @@ BLDDIR = build
 TARGET = trust
 $(shell mkdir -p $(BLDDIR))
 DEPFLAGS = -MT $@ -MMD -MP -MF $(BLDDIR)/$*.Td
-CFLAGS += -Wall -pedantic -O2 -march=native -mtune=native
+CFLAGS += -Wall -pedantic -std=c11 -O2 -march=native -mtune=native
 LDFLAGS +=
 
 .PHONY: all clean
 
-SRCS=automaton.c main.c
+SRCS=automaton.c main.c settings.c world.c
 
 OBJS=$(patsubst %, $(BLDDIR)/%.o, $(basename $(SRCS)))
 
@@ -29,5 +29,5 @@ $(BLDDIR)/%.d: $(BLDDIR) ;
 include $(wildcard $(patsubst %, $(BLDDIR)/%.d, $(basename $(SRCS))))
 
 clean:
-	rm -f $(BLDDIR)/*.o $(BLDDIR)/*.d
+	rm -f $(BLDDIR)/*.o $(BLDDIR)/*.d target
 	rmdir $(BLDDIR)

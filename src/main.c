@@ -1,184 +1,126 @@
-#include "automaton.h"
-
+#include <argp.h>
 #include <stdio.h>
+#include <assert.h>
 
-#define BOARD_SIZE_X 53
-#define BOARD_SIZE_Y 69
+#define STR_(x) #x
+#define STR(x) STR_(x)
 
-#define PLAY_AREA    3
-#define KILL_AREA    2
-#define NEW_AREA     4
+#define DFLT_BOARD_SIZE       32
+#define DFLT_STATES           32
+#define DFLT_STEPS            10000
+#define DFLT_TURNS            16
+#define DFLT_PLAY_AREA        3
+#define DFLT_KILL_AREA        2
+#define DFLT_CROSS_AREA       4
+#define DFLT_STAT_REPORT_STEP 1
+#define DFLT_STAT_FLUSH_STEP  100
+#define DFLT_AEXAMPLE_STEP    200
+#define DFLT_STAT_FILE        "stat"
+#define DFLT_AUTOMATON_FILE   "automaton_"
 
-#define TURN_N       50
-#define STATE_N      12
-#define STEP_N       3000
-
-static automaton_t world[BOARD_SIZE_X * BOARD_SIZE_Y];
-
-/* ========================================================================= */
-
-static void world_init(void) {
-  for (int i = 0; i < BOARD_SIZE_X * BOARD_SIZE_Y; ++i) {
-    automaton_init(&world[i], STATE_N);
-  }
-}
-
-/* ========================================================================= */
-
-static void world_reset(void) {
-  for (int i = 0; i < BOARD_SIZE_X * BOARD_SIZE_Y; ++i) {
-    automaton_reset(&world[i]);
-  }
-}
+#include "settings.h"
+#include "world.h"
 
 /* ========================================================================= */
+/* Argument parsing */
 
-static void world_play_with(int x, int y) {
-  int i = y * BOARD_SIZE_X + x;
-  for (int dy = -PLAY_AREA; dy <= PLAY_AREA; ++dy) {
-    for (int dx = -PLAY_AREA; dx <= PLAY_AREA; ++dx) {
-      int x2 = (x + BOARD_SIZE_X + dx) % BOARD_SIZE_X;
-      int y2 = (y + BOARD_SIZE_Y + dy) % BOARD_SIZE_Y;
-      int j = y2 * BOARD_SIZE_X + x2;
-      if (i != j) {
-        automaton_play(&world[i], &world[j], TURN_N);
-      }
+const char *argp_program_version = "trust 0.1";
+static const char doc[] =
+  "Evolution of trust";
+
+static struct argp_option options[] =
+  { { "board-size", 'b', "SIZE", 0,
+      "Specify the size of the board (default is "
+      STR(DFLT_BOARD_SIZE) "x" STR(DFLT_BOARD_SIZE) ")." }
+  , { "states", 's', "STATES", 0,
+      "Specify the number of automaton states (default is "
+      STR(DFLT_STATES) ")." }
+  , { "steps",  'n', "STEPS", 0,
+      "Specify the number of steps "
+      "(default is " STR(DFLT_STEPS) ", 0 means run indefinitely)." }
+  , { 0 }
+  };
+
+static void parse_size_opt(char *arg, struct argp_state *state);
+
+static error_t parse_opt(int key, char *arg, struct argp_state *state) {
+  settings_t *settings = state->input;
+  switch (key) {
+  case 'b':
+    parse_size_opt(arg, state);
+    break;
+  case 's':
+    if (parse_number(arg, &settings->state_n, 1, MAX_STATE_N) != CHECK_OK) {
+      argp_error(state, "Number of states must be in range beetwen 1 and "
+        STR(MAX_STATE_N) ".");
     }
-  }
-}
-
-static void world_play(void) {
-  for (int y = 0; y < BOARD_SIZE_Y; ++y) {
-    for (int x = 0; x < BOARD_SIZE_X; ++x) {
-      world_play_with(x, y);
+    break;
+  case 'n':
+    if (parse_number(arg, &settings->step_n, 0, MAX_STEP_N) != CHECK_OK) {
+      argp_error(state, "Number of steps must be in range beetwen 0 and "
+        STR(MAX_STEP_N) ".");
     }
+    break;
+  case ARGP_KEY_ARG:
+    argp_usage(state);
+    break;
+  default:
+    return ARGP_ERR_UNKNOWN;
+  }
+  return 0;
+}
+
+static void parse_size_opt(char *arg, struct argp_state *state) {
+  switch (parse_size(arg, state->input)) {
+  case PARSE_SIZE_OK:
+    break;
+  case PARSE_SIZE_SYNTAX_ERROR:
+    argp_error(state, "Invalid board size. "
+      "It should be in <SIZE_X>x<SIZE_Y> format, e.g., 13x24.");
+    break;
+  case PARSE_SIZE_BAD_VALUE:
+    argp_error(state, "Board size must be in range beetwen 1 and "
+      STR(MAX_BOARD_SIZE) ".");
+    break;
+  default:
+    assert(0);
   }
 }
 
-/* ========================================================================= */
-
-static void world_kill_if_weak(int x, int y) {
-  int i = y * BOARD_SIZE_X + x;
-  if (world[i].status != A_ST_ALIVE) {
-    return;
-  }
-  if (rand() % 500 != 0) {
-    for (int dy = -KILL_AREA; dy <= KILL_AREA; ++dy) {
-      for (int dx = -KILL_AREA; dx <= KILL_AREA; ++dx) {
-        int x2 = (x + BOARD_SIZE_X + dx) % BOARD_SIZE_X;
-        int y2 = (y + BOARD_SIZE_Y + dy) % BOARD_SIZE_Y;
-        int j = y2 * BOARD_SIZE_X + x2;
-        if (world[i].score > world[j].score) {
-          world[i].status = A_ST_SURVIVED;
-          return;
-        }
-      }
-    }
-  }
-  for (int dy = -KILL_AREA; dy <= KILL_AREA; ++dy) {
-    for (int dx = -KILL_AREA; dx <= KILL_AREA; ++dx) {
-      int x2 = (x + BOARD_SIZE_X + dx) % BOARD_SIZE_X;
-      int y2 = (y + BOARD_SIZE_Y + dy) % BOARD_SIZE_Y;
-      int j = y2 * BOARD_SIZE_X + x2;
-      world[j].status = A_ST_SURVIVED;
-    }
-  }
-  world[i].status = A_ST_DEAD;
-}
-
-static void world_kill_weak(void) {
-  for (int y = 0; y < BOARD_SIZE_Y; ++y) {
-    for (int x = 0; x < BOARD_SIZE_X; ++x) {
-      world_kill_if_weak(x, y);
-    }
-  }
-}
-
-/* ========================================================================= */
-
-static FILE *history;
-static int step;
-
-static void world_display(void) {
-  long total = 0;
-  for (int i = 0; i < BOARD_SIZE_X * BOARD_SIZE_Y; ++i) {
-    total += world[i].score;
-  }
-  float avg = (float)total / (BOARD_SIZE_X * BOARD_SIZE_Y);
-  fprintf(history, "%d\t%f\n", step, avg);
-  fflush(history);
-  if (step % 10 != 0) { return; };
-  for (int y = 0; y < BOARD_SIZE_Y; ++y) {
-    for (int x = 0; x < BOARD_SIZE_X; ++x) {
-      int i = y * BOARD_SIZE_X + x;
-      if (x != 0) {
-        fprintf(stderr, "|");
-      }
-      fprintf(stderr, "%s%4d%s",
-        (world[i].status == A_ST_DEAD ? "\033[31m" : ""),
-        world[i].score,
-        (world[i].status == A_ST_DEAD ? "\033[0m" : ""));
-    }
-    fprintf(stderr, "\n");
-  }
-  fprintf(stderr, "AVG[%d]: %f\n", step, avg);
-}
-
-/* ========================================================================= */
-
-static int select_parent(int x, int y) {
-  int dx = rand() % (2*NEW_AREA + 1) - NEW_AREA;
-  int dy = rand() % (2*NEW_AREA + 1) - NEW_AREA;
-  int x2 = (x + BOARD_SIZE_X + dx) % BOARD_SIZE_X;
-  int y2 = (y + BOARD_SIZE_Y + dy) % BOARD_SIZE_Y;
-  int j = y2 * BOARD_SIZE_X + x2;
-  return (world[j].status == A_ST_SURVIVED) ? j : -1;
-}
-
-static void world_create_new(void) {
-  for (int y = 0; y < BOARD_SIZE_Y; ++y) {
-    for (int x = 0; x < BOARD_SIZE_X; ++x) {
-      int i = y * BOARD_SIZE_X + x;
-      if (world[i].status != A_ST_DEAD) {
-        continue;
-      }
-      int j, k;
-      do { j = select_parent(x, y); } while (j == -1);
-      do { k = select_parent(x, y); } while (k == -1 && j != k);
-      automaton_cross(&world[i], &world[j], &world[k]);
-    }
-  }
-}
-
-/* ========================================================================= */
-
-#define BUFLEN 4096
-void skip_line(void) {
-/*
-  static char buf[BUFLEN];
-  fgets(buf, BUFLEN, stdin);
-*/
-  fflush(stderr);
-}
-
-/* ========================================================================= */
+static struct argp argp = { options, parse_opt, 0, doc, 0, 0, 0 };
 
 int main(int argc, char **argv) {
-  world_init();
-  history = fopen("history", "wt");
-  for (step = 0; step < STEP_N; ++step) {
-    world_reset();
-    world_play();
-    world_kill_weak();
-    world_display();
-    skip_line();
-    world_create_new();
-  }
-  fclose(history);
-  int i;
+  world_t world =
+    { .settings = 
+      { .board_size_x     = DFLT_BOARD_SIZE
+      , .board_size_y     = DFLT_BOARD_SIZE
+      , .state_n          = DFLT_STATES
+      , .step_n           = DFLT_STEPS
+      , .turn_n           = DFLT_TURNS
+      , .play_area        = DFLT_PLAY_AREA
+      , .kill_area        = DFLT_KILL_AREA
+      , .cross_area       = DFLT_CROSS_AREA
+      , .stat_report_step = DFLT_STAT_REPORT_STEP
+      , .stat_flush_step  = DFLT_STAT_FLUSH_STEP
+      , .aexample_step    = DFLT_AEXAMPLE_STEP
+      , .stat_file        = DFLT_STAT_FILE
+      , .automaton_file   = DFLT_AUTOMATON_FILE
+      }
+    };
+
+  argp_parse(&argp, argc, argv, 0, 0, &world.settings);
+
+  world_init(&world);
   do {
-    i = rand()%(BOARD_SIZE_X * BOARD_SIZE_Y);
-  } while (world[i].status != A_ST_SURVIVED);
-  automaton_print(stdout, &world[i]);
+    world_reset(&world);
+    world_play(&world);
+    world_kill_weak(&world);
+    world_spawn_new(&world);
+    world_report(&world);
+    printf("\r%lu", world.step);
+    fflush(stdout);
+  } while (world_next_step(&world));
+
+  world_destroy(&world);
   return 0;
 }

@@ -22,15 +22,19 @@ void automaton_init(automaton_t *a, unsigned short state_n) {
   }
 }
 
+void automaton_destroy(automaton_t *a) {
+  free(a->states);
+}
+
 void automaton_reset(automaton_t *a) {
   a->score  = 0;
   a->status = A_ST_ALIVE;
 }
 
-void automaton_play(automaton_t *a1, automaton_t *a2, int turn_n) {
+void automaton_play(automaton_t *a1, automaton_t *a2, settings_t *settings) {
   int s1 = 0;
   int s2 = 0;
-  for (; turn_n; --turn_n) {
+  for (int i = 0; i < settings->turn_n; i++) {
     int err1 = (rand()%100 < 1 ? 1 : 0);
     int err2 = (rand()%100 < 1 ? 1 : 0);
     int act1 = (rand()%ACTION_RESOLUTION < a1->states[s1].action ? 1 : 0);
