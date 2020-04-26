@@ -15,6 +15,9 @@ void automaton_init(automaton_t *a, unsigned short state_n) {
   a->score   = 0;
   a->state_n = state_n;
   a->status  = A_ST_ALIVE;
+  a->color[0] = rand()%256;
+  a->color[1] = rand()%256;
+  a->color[2] = rand()%256;
   a->states  = malloc(sizeof(state_t) * state_n);
 
   for (int i = 0; i < (int)state_n; ++i) {
@@ -48,13 +51,22 @@ void automaton_play(automaton_t *a1, automaton_t *a2, settings_t *settings) {
   }
 }
 
+static unsigned char change_color(int c) {
+  c += rand()%3 - 1;
+  return (c < 0 ? 0 : c > 255 ? 255 : c);
+}
+
 void automaton_cross(
   automaton_t       *a,
   const automaton_t *p1,
   const automaton_t *p2)
 {
+  int i;
   assert(a->state_n == p1->state_n && a->state_n == p2->state_n);
-  for (int i = 0; i < (int)a->state_n; ++i) {
+  for (i = 0; i < 3; ++i) {
+    a->color[i] = change_color((rand()%2) ? p1->color[i] : p2->color[i]);
+  }
+  for (i = 0; i < (int)a->state_n; ++i) {
     if (rand() % 100 == 0) {
       state_init(&a->states[i], a->state_n);
       continue;

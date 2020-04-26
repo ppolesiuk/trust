@@ -80,7 +80,7 @@ void write_world_image(
 
     png_init_io(png_ptr, fp);
     png_set_IHDR(png_ptr, info_ptr,
-      world->settings.board_size_x,
+      2*world->settings.board_size_x,
       world->settings.board_size_y,
       8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
       PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
@@ -95,13 +95,17 @@ void write_world_image(
     png_write_info(png_ptr, info_ptr);
 
     /* allocate memory for one row */
-    row = malloc(3 * world->settings.board_size_x * sizeof(png_byte));
+    row = malloc(6 * world->settings.board_size_x * sizeof(png_byte));
 
     /* write data */
+    int size_x = world->settings.board_size_x;
     for (int y = 0; y < world->settings.board_size_y; y++) {
-      for (int x = 0; x < world->settings.board_size_x; x++) {
-        int i = y * world->settings.board_size_x + x;
+      for (int x = 0; x < size_x; x++) {
+        int i = y * size_x + x;
         setRGB(&row[x*3], world, world->pop[i].score);
+        row[(x+size_x)*3 + 0] = world->pop[i].color[0];
+        row[(x+size_x)*3 + 1] = world->pop[i].color[1];
+        row[(x+size_x)*3 + 2] = world->pop[i].color[2];
       }
       png_write_row(png_ptr, row);
     }

@@ -21,7 +21,8 @@ typedef struct state {
 typedef struct automaton {
   int            score;
   unsigned short state_n;
-  short          status;
+  char           status;
+  unsigned char  color[3];
   state_t       *states;
 } automaton_t;
 
