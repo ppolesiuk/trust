@@ -14,7 +14,7 @@ void world_init(world_t *world) {
   for (int i = 0; i < board_size(world); ++i) {
     automaton_init(&world->pop[i], world->settings.state_n);
   }
-  if (strcmp(world->settings.stat_file, "") == 0) {
+  if (world->settings.stat_file == NULL) {
     world->stat_file = NULL;
   } else if (strcmp(world->settings.stat_file, "-") == 0) {
     world->stat_file = stdout;
@@ -157,8 +157,8 @@ static automaton_t *pick_example_automaton(world_t *world) {
 }
 
 static void report_example_automaton(world_t *world) {
-  char *buf = malloc(strlen(world->settings.automaton_file) + 32);
-  sprintf(buf, "%s%lu.gv", world->settings.automaton_file, world->step);
+  char *buf = malloc(strlen(world->settings.example_file) + 32);
+  sprintf(buf, "%s%lu.gv", world->settings.example_file, world->step);
   FILE *file = fopen(buf, "w");
   if (file) {
     automaton_print(file, pick_example_automaton(world));
@@ -169,17 +169,22 @@ static void report_example_automaton(world_t *world) {
 
 void world_report(world_t *world) {
   if (world->stat_file) {
-    if (world->step % world->settings.stat_report_step == 0) {
+    if (world->step % world->settings.stat_report_rate == 0) {
       fprintf(world->stat_file, "%lu\t%f\n", world->step, avg_score(world));
     }
-    if (world->step % world->settings.stat_flush_step == 0) {
+    unsigned long rs = world->step / world->settings.stat_report_rate;
+    if (rs % world->settings.stat_flush_rate == 0) {
       fflush(world->stat_file);
     }
   }
-  if (world->settings.aexample_step != 0
-    && world->step % world->settings.aexample_step == 0)
+  if (world->settings.example_file != NULL
+    && world->step % world->settings.example_rate == 0)
   {
     report_example_automaton(world);
+  }
+  if (!world->settings.quiet) {
+    printf("\r%10lu: %10f", world->step, avg_score(world));
+    fflush(stdout);
   }
 }
 

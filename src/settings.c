@@ -55,5 +55,6 @@ parse_size_result_t parse_size(const char *str, settings_t *settings) {
   if (parse_num_nc(size_y, &settings->board_size_y, 1, MAX_BOARD_SIZE)) {
     return PARSE_SIZE_BAD_VALUE;
   }
-  return PARSE_SIZE_OK;
+  return (settings->board_size_x == 1 && settings->board_size_y == 1) ?
+    PARSE_SIZE_TOO_SMALL : PARSE_SIZE_OK;
 }
