@@ -163,6 +163,8 @@ static void report_example_automaton(world_t *world) {
   if (file) {
     automaton_print(file, pick_example_automaton(world));
     fclose(file);
+  } else {
+    error(0, errno, "cannot open file `%s'", buf);
   }
   free(buf);
 }

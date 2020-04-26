@@ -25,7 +25,7 @@
 /* ========================================================================= */
 /* Argument parsing */
 
-const char *argp_program_version = "trust 0.2";
+const char *argp_program_version = "trust 0.2.1";
 static const char doc[] =
   "Evolution of trust";
 
