@@ -23,9 +23,11 @@ typedef struct settings {
   int         stat_report_rate;
   int         stat_flush_rate;
   int         example_rate;
+  int         image_rate;
   char        quiet;
   const char *stat_file;
-  const char *example_file;
+  const char *example_name;
+  const char *image_name;
 } settings_t;
 
 int parse_number(const char *str, int *num, int min, int max);

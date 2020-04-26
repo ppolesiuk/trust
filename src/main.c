@@ -16,8 +16,10 @@
 #define DFLT_STAT_REPORT_RATE 1
 #define DFLT_STAT_FLUSH_RATE  10
 #define DFLT_EXAMPLE_RATE     200
+#define DFLT_IMAGE_RATE       10
 #define DFLT_STAT_FILE        NULL
-#define DFLT_EXAMPLE_FILE     NULL
+#define DFLT_EXAMPLE_NAME     NULL
+#define DFLT_IMAGE_NAME       NULL
 
 #include "settings.h"
 #include "world.h"
@@ -25,7 +27,7 @@
 /* ========================================================================= */
 /* Argument parsing */
 
-const char *argp_program_version = "trust 0.2.1";
+const char *argp_program_version = "trust 0.3.0";
 static const char doc[] =
   "Evolution of trust";
 
@@ -38,8 +40,10 @@ static const char doc[] =
 #define OPT_CROSS_AREA       'c'
 #define OPT_STAT_FILE        'o'
 #define OPT_STAT_REPORT_RATE 'O'
-#define OPT_EXAMPLE_FILE     'x'
+#define OPT_EXAMPLE_NAME     'x'
 #define OPT_EXAMPLE_RATE     'X'
+#define OPT_IMAGE_NAME       'i'
+#define OPT_IMAGE_RATE       'I'
 #define OPT_QUIET            'q'
 
 #define OPT_STAT_FLUSH_RATE  128
@@ -74,11 +78,16 @@ static struct argp_option options[] =
       "(default is " STR(DFLT_STAT_FLUSH_RATE) ")" }
   , { "example-rate", OPT_EXAMPLE_RATE, "N", 0,
       "Write example automaton every N steps "
-      "(default is " STR(DFLT_EXAMPLE_STEP) ")" }
+      "(default is " STR(DFLT_EXAMPLE_RATE) ")" }
+  , { "image-rate", OPT_IMAGE_RATE, "N", 0,
+      "Write image every N steps "
+      "(default is " STR(DFLT_IMAGE_RATE) ")" }
   , { "stat-file", OPT_STAT_FILE, "FILE", 0,
       "Report stats to FILE" }
-  , { "example-file", OPT_EXAMPLE_FILE, "FILE", 0,
-      "Write example automatons to FILE<n>.gv, where <n> is a step number" }
+  , { "example-name", OPT_EXAMPLE_NAME, "NAME", 0,
+      "Write example automatons to NAME<n>.gv, where <n> is a step number" }
+  , { "image-name", OPT_IMAGE_NAME, "NAME", 0,
+      "Write images to NAME<n>.png, where <n> is a step number" }
   , { "quiet", OPT_QUIET, 0, 0,
       "Be quiet" }
   , { 0 }
@@ -138,14 +147,21 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
     check_arg_range(arg, &settings->example_rate, 1, MAX_REPORT_RATE,
       state, "The rate");
     break;
+  case OPT_IMAGE_RATE:
+    check_arg_range(arg, &settings->example_rate, 1, MAX_REPORT_RATE,
+      state, "The rate");
+    break;
   case OPT_STAT_FILE:
     settings->stat_file = arg;
     if (strcmp(arg, "-") == 0) {
       settings->quiet = 1;
     }
     break;
-  case OPT_EXAMPLE_FILE:
-    settings->example_file = arg;
+  case OPT_EXAMPLE_NAME:
+    settings->example_name = arg;
+    break;
+  case OPT_IMAGE_NAME:
+    settings->image_name = arg;
     break;
   case OPT_QUIET:
     settings->quiet = 1;
@@ -195,9 +211,11 @@ int main(int argc, char **argv) {
       , .stat_report_rate = DFLT_STAT_REPORT_RATE
       , .stat_flush_rate  = DFLT_STAT_FLUSH_RATE
       , .example_rate     = DFLT_EXAMPLE_RATE
+      , .image_rate       = DFLT_IMAGE_RATE
       , .quiet            = 0
       , .stat_file        = DFLT_STAT_FILE
-      , .example_file     = DFLT_EXAMPLE_FILE
+      , .example_name     = DFLT_EXAMPLE_NAME
+      , .image_name       = DFLT_IMAGE_NAME
       }
     };
 

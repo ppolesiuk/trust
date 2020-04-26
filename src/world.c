@@ -1,4 +1,5 @@
 #include "world.h"
+#include "world_image.h"
 
 #include <errno.h>
 #include <error.h>
@@ -157,8 +158,8 @@ static automaton_t *pick_example_automaton(world_t *world) {
 }
 
 static void report_example_automaton(world_t *world) {
-  char *buf = malloc(strlen(world->settings.example_file) + 32);
-  sprintf(buf, "%s%lu.gv", world->settings.example_file, world->step);
+  char *buf = malloc(strlen(world->settings.example_name) + 32);
+  sprintf(buf, "%s%lu.gv", world->settings.example_name, world->step);
   FILE *file = fopen(buf, "w");
   if (file) {
     automaton_print(file, pick_example_automaton(world));
@@ -167,6 +168,15 @@ static void report_example_automaton(world_t *world) {
     error(0, errno, "cannot open file `%s'", buf);
   }
   free(buf);
+}
+
+static void report_image(world_t *world) {
+  char title[64];
+  char *fname = malloc(strlen(world->settings.image_name) + 32);
+  sprintf(fname, "%s%lu.png", world->settings.image_name, world->step);
+  sprintf(title, "Step %ld", world->step);
+  write_world_image(fname, world, title);
+  free(fname);
 }
 
 void world_report(world_t *world) {
@@ -179,10 +189,15 @@ void world_report(world_t *world) {
       fflush(world->stat_file);
     }
   }
-  if (world->settings.example_file != NULL
+  if (world->settings.example_name != NULL
     && world->step % world->settings.example_rate == 0)
   {
     report_example_automaton(world);
+  }
+  if (world->settings.image_name != NULL
+    && world->step % world->settings.image_rate == 0)
+  {
+    report_image(world);
   }
   if (!world->settings.quiet) {
     printf("\r%10lu: %10f", world->step, avg_score(world));

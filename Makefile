@@ -3,11 +3,11 @@ TARGET = trust
 $(shell mkdir -p $(BLDDIR))
 DEPFLAGS = -MT $@ -MMD -MP -MF $(BLDDIR)/$*.Td
 CFLAGS += -Wall -pedantic -std=c11 -O2 -march=native -mtune=native
-LDFLAGS +=
+LDFLAGS += -lpng
 
 .PHONY: all clean
 
-SRCS=automaton.c main.c settings.c world.c
+SRCS=automaton.c main.c settings.c world.c world_image.c
 
 OBJS=$(patsubst %, $(BLDDIR)/%.o, $(basename $(SRCS)))
 
