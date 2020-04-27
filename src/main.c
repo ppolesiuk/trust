@@ -13,7 +13,7 @@
 #define DFLT_PLAY_AREA        3
 #define DFLT_KILL_AREA        2
 #define DFLT_CROSS_AREA       4
-#define DFLT_LIFETIME         200
+#define DFLT_LIFETIME         2000
 #define DFLT_STAT_REPORT_RATE 1
 #define DFLT_STAT_FLUSH_RATE  10
 #define DFLT_EXAMPLE_RATE     200
@@ -29,7 +29,7 @@
 /* ========================================================================= */
 /* Argument parsing */
 
-const char *argp_program_version = "trust 0.4.3";
+const char *argp_program_version = "trust 0.4.4";
 static const char doc[] =
   "Evolution of trust";
 
@@ -78,7 +78,7 @@ static struct argp_option options[] =
       "are selected (default is " STR(DFLT_CROSS_AREA) ")" }
   , { "lifetime", OPT_LIFETIME, "N", 0,
       "Specify the automaton lifetime "
-      "(default is " STR_(DFLT_LIFETIME) ")" }
+      "(default is " STR(DFLT_LIFETIME) ")" }
   , { "stat-report-rate", OPT_STAT_REPORT_RATE, "N", 0,
       "Report statistics every N steps to a file "
       "(default is " STR(DFLT_STAT_REPORT_RATE) ")" }

@@ -163,7 +163,7 @@ void world_spawn_new(world_t *world) {
       do { j = select_parent(world, x, y); } while (j == -1);
       do { k = select_parent(world, x, y); } while (k == -1 && j != k);
       automaton_cross(&world->pop[i], &world->pop[j], &world->pop[k],
-        &world->rand);
+        &world->settings, &world->rand);
     }
   }
 }

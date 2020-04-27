@@ -76,11 +76,13 @@ void automaton_cross(
   automaton_t       *a,
   const automaton_t *p1,
   const automaton_t *p2,
+  const settings_t  *settings,
   MTRand            *rand)
 {
   int i;
   assert(a->state_n == p1->state_n && a->state_n == p2->state_n);
   a->color = cross_color(p1->color, p2->color, rand);
+  a->lifetime = settings->lifetime;
   for (i = 0; i < (int)a->state_n; ++i) {
     if (genRand(rand) < 0.01) {
       state_init(&a->states[i], a->state_n, rand);
