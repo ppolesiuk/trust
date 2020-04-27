@@ -11,6 +11,9 @@
 #define CHECK_OK   0
 #define CHECK_FAIL 1
 
+#define F_QUIET       1
+#define F_SPECIES_MAP 2
+
 typedef struct settings {
   int         board_size_x;
   int         board_size_y;
@@ -24,7 +27,7 @@ typedef struct settings {
   int         stat_flush_rate;
   int         example_rate;
   int         image_rate;
-  char        quiet;
+  int         flags;
   const char *stat_file;
   const char *example_name;
   const char *image_name;

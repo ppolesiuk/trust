@@ -199,7 +199,7 @@ void world_report(world_t *world) {
   {
     report_image(world);
   }
-  if (!world->settings.quiet) {
+  if ((world->settings.flags & F_QUIET) == 0) {
     printf("\r%10lu: %10f", world->step, avg_score(world));
     fflush(stdout);
   }

@@ -27,7 +27,7 @@
 /* ========================================================================= */
 /* Argument parsing */
 
-const char *argp_program_version = "trust 0.4.0";
+const char *argp_program_version = "trust 0.4.1";
 static const char doc[] =
   "Evolution of trust";
 
@@ -45,8 +45,10 @@ static const char doc[] =
 #define OPT_IMAGE_NAME       'i'
 #define OPT_IMAGE_RATE       'I'
 #define OPT_QUIET            'q'
+#define OPT_SPECIES_MAP      'm'
 
 #define OPT_STAT_FLUSH_RATE  128
+#define OPT_NO_SPECIES_MAP   129
 
 static struct argp_option options[] =
   { { "board-size", OPT_BOARD_SIZE, "SIZE", 0,
@@ -90,6 +92,10 @@ static struct argp_option options[] =
       "Write images to NAME<n>.png, where <n> is a step number" }
   , { "quiet", OPT_QUIET, 0, 0,
       "Be quiet" }
+  , { "species-map", OPT_SPECIES_MAP, 0, 0,
+      "Show species map on images" }
+  , { "no-species-map", OPT_NO_SPECIES_MAP, 0, 0,
+      "Do not show species map on images (default)" }
   , { 0 }
   };
 
@@ -154,7 +160,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
   case OPT_STAT_FILE:
     settings->stat_file = arg;
     if (strcmp(arg, "-") == 0) {
-      settings->quiet = 1;
+      settings->flags |= F_QUIET;
     }
     break;
   case OPT_EXAMPLE_NAME:
@@ -164,7 +170,13 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
     settings->image_name = arg;
     break;
   case OPT_QUIET:
-    settings->quiet = 1;
+    settings->flags |= F_QUIET;
+    break;
+  case OPT_SPECIES_MAP:
+    settings->flags |= F_SPECIES_MAP;
+    break;
+  case OPT_NO_SPECIES_MAP:
+    settings->flags &= ~F_SPECIES_MAP;
     break;
   case ARGP_KEY_ARG:
     argp_usage(state);
@@ -212,7 +224,7 @@ int main(int argc, char **argv) {
       , .stat_flush_rate  = DFLT_STAT_FLUSH_RATE
       , .example_rate     = DFLT_EXAMPLE_RATE
       , .image_rate       = DFLT_IMAGE_RATE
-      , .quiet            = 0
+      , .flags            = 0
       , .stat_file        = DFLT_STAT_FILE
       , .example_name     = DFLT_EXAMPLE_NAME
       , .image_name       = DFLT_IMAGE_NAME
