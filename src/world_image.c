@@ -107,9 +107,9 @@ void write_world_image(
         int i = y * size_x + x;
         setRGB(&row[x*3], world, world->pop[i].score);
         if (smap) {
-          row[(x+size_x)*3 + 0] = world->pop[i].color[0];
-          row[(x+size_x)*3 + 1] = world->pop[i].color[1];
-          row[(x+size_x)*3 + 2] = world->pop[i].color[2];
+          row[(x+size_x)*3 + 0] = world->pop[i].color & 0xFF;
+          row[(x+size_x)*3 + 1] = (world->pop[i].color >> 8) & 0xFF;
+          row[(x+size_x)*3 + 2] = (world->pop[i].color >> 16) & 0xFF;
         }
       }
       png_write_row(png_ptr, row);

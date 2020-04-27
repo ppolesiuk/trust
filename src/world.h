@@ -1,8 +1,9 @@
-#ifndef __WORLD_H__
-#define __WORLD_H__
+#ifndef __WORLD_H
+#define __WORLD_H
 
 #include "automaton.h"
 #include "settings.h"
+#include "mtwister.h"
 
 #include <stdio.h>
 
@@ -11,6 +12,7 @@ typedef struct world {
   unsigned long step;
   automaton_t  *pop;
   FILE         *stat_file;
+  MTRand        rand;
 } world_t;
 
 void world_init(world_t *world);

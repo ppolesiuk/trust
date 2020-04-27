@@ -4,24 +4,22 @@
 
 #define ACTION_RESOLUTION 1024
 
-void state_init(state_t *st, unsigned short state_n) {
-  st->action = rand()%(ACTION_RESOLUTION + 1);
+void state_init(state_t *st, unsigned short state_n, MTRand *rand) {
+  st->action = genRandLong(rand)%(ACTION_RESOLUTION + 1);
   for (int i = 0; i < 8; ++i) {
-    st->next_tab[i] = rand()%state_n;
+    st->next_tab[i] = genRandLong(rand)%state_n;
   }
 }
 
-void automaton_init(automaton_t *a, unsigned short state_n) {
+void automaton_init(automaton_t *a, unsigned short state_n, MTRand *rand) {
   a->score   = 0;
   a->state_n = state_n;
   a->status  = A_ST_ALIVE;
-  a->color[0] = rand()%256;
-  a->color[1] = rand()%256;
-  a->color[2] = rand()%256;
+  a->color   = genRandLong(rand) & 0xFFFFFF;
   a->states  = malloc(sizeof(state_t) * state_n);
 
   for (int i = 0; i < (int)state_n; ++i) {
-    state_init(&a->states[i], state_n);
+    state_init(&a->states[i], state_n, rand);
   }
 }
 
@@ -34,14 +32,21 @@ void automaton_reset(automaton_t *a) {
   a->status = A_ST_ALIVE;
 }
 
-void automaton_play(automaton_t *a1, automaton_t *a2, settings_t *settings) {
+void automaton_play(
+  automaton_t       *a1,
+  automaton_t       *a2,
+  const settings_t  *settings,
+  MTRand            *rand)
+{
   int s1 = 0;
   int s2 = 0;
   for (int i = 0; i < settings->turn_n; i++) {
-    int err1 = (rand()%100 < 1 ? 1 : 0);
-    int err2 = (rand()%100 < 1 ? 1 : 0);
-    int act1 = (rand()%ACTION_RESOLUTION < a1->states[s1].action ? 1 : 0);
-    int act2 = (rand()%ACTION_RESOLUTION < a2->states[s2].action ? 1 : 0);
+    int err1 = (genRand(rand) < 0.01 ? 1 : 0);
+    int err2 = (genRand(rand) < 0.01 ? 1 : 0);
+    int act1 =
+      (genRandLong(rand)%ACTION_RESOLUTION < a1->states[s1].action ? 1 : 0);
+    int act2 =
+      (genRandLong(rand)%ACTION_RESOLUTION < a2->states[s2].action ? 1 : 0);
     act1 = (err1 ? 1-act1 : act1);
     act2 = (err2 ? 1-act2 : act2);
     a1->score += 3*act2 - act1;
@@ -51,32 +56,43 @@ void automaton_play(automaton_t *a1, automaton_t *a2, settings_t *settings) {
   }
 }
 
-static unsigned char change_color(int c) {
-  c += rand()%3 - 1;
-  return (c < 0 ? 0 : c > 255 ? 255 : c);
+static unsigned cross_color(unsigned c1, unsigned c2, MTRand *rand) {
+  int      x = genRandLong(rand) % 54;
+  unsigned c = (x & 1 ? c1 : c2);
+  int      r = (c & 0xFF)         + (x / 2) % 3 - 1;
+  r = (r < 0 ? 0 : r > 255 ? 255 : r);
+  int      g = ((c >> 8)  & 0xFF) + (x / 6) % 3 - 1;
+  g = (g < 0 ? 0 : g > 255 ? 255 : g);
+  int      b = ((c >> 16) & 0xFF) + (x / 18) - 1;
+  b = (b < 0 ? 0 : b > 255 ? 255 : b);
+  return (b << 16) | (g << 8) | r;
 }
 
 void automaton_cross(
   automaton_t       *a,
   const automaton_t *p1,
-  const automaton_t *p2)
+  const automaton_t *p2,
+  MTRand            *rand)
 {
   int i;
   assert(a->state_n == p1->state_n && a->state_n == p2->state_n);
-  for (i = 0; i < 3; ++i) {
-    a->color[i] = change_color((rand()%2) ? p1->color[i] : p2->color[i]);
-  }
+  a->color = cross_color(p1->color, p2->color, rand);
   for (i = 0; i < (int)a->state_n; ++i) {
-    if (rand() % 100 == 0) {
-      state_init(&a->states[i], a->state_n);
+    if (genRand(rand) < 0.01) {
+      state_init(&a->states[i], a->state_n, rand);
       continue;
-    } else if (rand() % 2 == 0) {
+    } else if (genRandLong(rand) % 2 == 0) {
       a->states[i] = p1->states[i];
     } else {
       a->states[i] = p2->states[i];
     }
-    if (rand() % 100 == 0) {
-      a->states[i].action = rand()%(ACTION_RESOLUTION + 1);
+    if (genRand(rand) < 0.01) {
+      a->states[i].action = genRandLong(rand)%(ACTION_RESOLUTION + 1);
+    }
+    for (int j = 0; j < 8; ++j) {
+      if (genRand(rand) < 0.01) {
+        a->states[i].next_tab[j] = genRandLong(rand) % a->state_n;
+      }
     }
   }
 }

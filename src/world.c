@@ -10,10 +10,11 @@ static int board_size(world_t *world) {
 }
 
 void world_init(world_t *world) {
+  world->rand = seedRand(world->settings.seed);
   world->pop  = malloc(sizeof(automaton_t) * board_size(world));
   world->step = 0;
   for (int i = 0; i < board_size(world); ++i) {
-    automaton_init(&world->pop[i], world->settings.state_n);
+    automaton_init(&world->pop[i], world->settings.state_n, &world->rand);
   }
   if (world->settings.stat_file == NULL) {
     world->stat_file = NULL;
@@ -60,7 +61,8 @@ static void world_play_with(world_t *world, int x, int y) {
       int y2 = mod(y + dy, size_y);
       int j = y2 * size_x + x2;
       if (i != j) {
-        automaton_play(&world->pop[i], &world->pop[j], &world->settings);
+        automaton_play(&world->pop[i], &world->pop[j],
+          &world->settings, &world->rand);
       }
     }
   }
@@ -82,7 +84,7 @@ static void world_kill_if_weak(world_t *world, int x, int y) {
   if (world->pop[i].status != A_ST_ALIVE) {
     return;
   }
-  if (rand() % 500 != 0) {
+  if (genRandLong(&world->rand) % 500 != 0) {
     for (int dy = -kill_area; dy <= kill_area; ++dy) {
       for (int dx = -kill_area; dx <= kill_area; ++dx) {
         int x2 = mod(x + dx, size_x);
@@ -118,8 +120,8 @@ static int select_parent(world_t *world, int x, int y) {
   int size_x = world->settings.board_size_x;
   int size_y = world->settings.board_size_y;
   int cross_area = world->settings.cross_area;
-  int dx = rand() % (2*cross_area + 1) - cross_area;
-  int dy = rand() % (2*cross_area + 1) - cross_area;
+  int dx = genRandLong(&world->rand) % (2*cross_area + 1) - cross_area;
+  int dy = genRandLong(&world->rand) % (2*cross_area + 1) - cross_area;
   int x2 = mod(x + dx, size_x);
   int y2 = mod(y + dy, size_y);
   int j = y2 * size_x + x2;
@@ -136,7 +138,8 @@ void world_spawn_new(world_t *world) {
       int j, k;
       do { j = select_parent(world, x, y); } while (j == -1);
       do { k = select_parent(world, x, y); } while (k == -1 && j != k);
-      automaton_cross(&world->pop[i], &world->pop[j], &world->pop[k]);
+      automaton_cross(&world->pop[i], &world->pop[j], &world->pop[k],
+        &world->rand);
     }
   }
 }
@@ -152,6 +155,7 @@ static double avg_score(world_t *world) {
 static automaton_t *pick_example_automaton(world_t *world) {
   int i;
   do {
+    /* we use different PRNG, in order to make simulation deterministic */
     i = rand() % board_size(world);
   } while (world->pop[i].status != A_ST_SURVIVED);
   return &world->pop[i];

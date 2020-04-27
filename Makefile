@@ -7,7 +7,7 @@ LDFLAGS += -lpng
 
 .PHONY: all clean
 
-SRCS=automaton.c main.c settings.c world.c world_image.c
+SRCS=automaton.c main.c mtwister.c settings.c world.c world_image.c
 
 OBJS=$(patsubst %, $(BLDDIR)/%.o, $(basename $(SRCS)))
 

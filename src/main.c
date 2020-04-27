@@ -17,6 +17,7 @@
 #define DFLT_STAT_FLUSH_RATE  10
 #define DFLT_EXAMPLE_RATE     200
 #define DFLT_IMAGE_RATE       10
+#define DFLT_SEED             1337
 #define DFLT_STAT_FILE        NULL
 #define DFLT_EXAMPLE_NAME     NULL
 #define DFLT_IMAGE_NAME       NULL
@@ -27,7 +28,7 @@
 /* ========================================================================= */
 /* Argument parsing */
 
-const char *argp_program_version = "trust 0.4.1";
+const char *argp_program_version = "trust 0.4.2";
 static const char doc[] =
   "Evolution of trust";
 
@@ -49,6 +50,7 @@ static const char doc[] =
 
 #define OPT_STAT_FLUSH_RATE  128
 #define OPT_NO_SPECIES_MAP   129
+#define OPT_SEED             130
 
 static struct argp_option options[] =
   { { "board-size", OPT_BOARD_SIZE, "SIZE", 0,
@@ -96,6 +98,9 @@ static struct argp_option options[] =
       "Show species map on images" }
   , { "no-species-map", OPT_NO_SPECIES_MAP, 0, 0,
       "Do not show species map on images (default)" }
+  , { "seed", OPT_SEED, "SEED", 0,
+      "Set the seed of pseudo-random number generator "
+      "(default is " STR(DFLT_SEED) ")" }
   , { 0 }
   };
 
@@ -178,6 +183,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
   case OPT_NO_SPECIES_MAP:
     settings->flags &= ~F_SPECIES_MAP;
     break;
+  case OPT_SEED:
+    settings->seed = atol(arg);
+    break;
   case ARGP_KEY_ARG:
     argp_usage(state);
     break;
@@ -225,6 +233,7 @@ int main(int argc, char **argv) {
       , .example_rate     = DFLT_EXAMPLE_RATE
       , .image_rate       = DFLT_IMAGE_RATE
       , .flags            = 0
+      , .seed             = DFLT_SEED
       , .stat_file        = DFLT_STAT_FILE
       , .example_name     = DFLT_EXAMPLE_NAME
       , .image_name       = DFLT_IMAGE_NAME

@@ -1,5 +1,5 @@
-#ifndef __WORLD_IMAGE_H__
-#define __WORLD_IMAGE_H__
+#ifndef __WORLD_IMAGE_H
+#define __WORLD_IMAGE_H
 
 #include "world.h"
 

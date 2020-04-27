@@ -1,5 +1,5 @@
-#ifndef __SETTINGS_H__
-#define __SETTINGS_H__
+#ifndef __SETTINGS_H
+#define __SETTINGS_H
 
 #define MAX_BOARD_SIZE  4096
 #define MAX_AREA_SIZE   2048
@@ -15,22 +15,23 @@
 #define F_SPECIES_MAP 2
 
 typedef struct settings {
-  int         board_size_x;
-  int         board_size_y;
-  int         state_n;
-  int         step_n;
-  int         turn_n;
-  int         play_area;
-  int         kill_area;
-  int         cross_area;
-  int         stat_report_rate;
-  int         stat_flush_rate;
-  int         example_rate;
-  int         image_rate;
-  int         flags;
-  const char *stat_file;
-  const char *example_name;
-  const char *image_name;
+  int           board_size_x;
+  int           board_size_y;
+  int           state_n;
+  int           step_n;
+  int           turn_n;
+  int           play_area;
+  int           kill_area;
+  int           cross_area;
+  int           stat_report_rate;
+  int           stat_flush_rate;
+  int           example_rate;
+  int           image_rate;
+  int           flags;
+  unsigned long seed;
+  const char   *stat_file;
+  const char   *example_name;
+  const char   *image_name;
 } settings_t;
 
 int parse_number(const char *str, int *num, int min, int max);
