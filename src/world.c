@@ -14,7 +14,7 @@ void world_init(world_t *world) {
   world->pop  = malloc(sizeof(automaton_t) * board_size(world));
   world->step = 0;
   for (int i = 0; i < board_size(world); ++i) {
-    automaton_init(&world->pop[i], world->settings.state_n, &world->rand);
+    automaton_init(&world->pop[i], &world->settings, &world->rand);
   }
   if (world->settings.stat_file == NULL) {
     world->stat_file = NULL;
@@ -84,18 +84,37 @@ static void world_kill_if_weak(world_t *world, int x, int y) {
   if (world->pop[i].status != A_ST_ALIVE) {
     return;
   }
-  if (genRandLong(&world->rand) % 500 != 0) {
-    for (int dy = -kill_area; dy <= kill_area; ++dy) {
-      for (int dx = -kill_area; dx <= kill_area; ++dx) {
-        int x2 = mod(x + dx, size_x);
-        int y2 = mod(y + dy, size_y);
-        int j = y2 * size_x + x2;
-        if (world->pop[i].score > world->pop[j].score) {
-          world->pop[i].status = A_ST_SURVIVED;
-          return;
-        }
+  for (int dy = -kill_area; dy <= kill_area; ++dy) {
+    for (int dx = -kill_area; dx <= kill_area; ++dx) {
+      int x2 = mod(x + dx, size_x);
+      int y2 = mod(y + dy, size_y);
+      int j = y2 * size_x + x2;
+      if (world->pop[i].score > world->pop[j].score) {
+        world->pop[i].status = A_ST_STRONG;
+        return;
       }
     }
+  }
+  for (int dy = -kill_area; dy <= kill_area; ++dy) {
+    for (int dx = -kill_area; dx <= kill_area; ++dx) {
+      int x2 = mod(x + dx, size_x);
+      int y2 = mod(y + dy, size_y);
+      int j = y2 * size_x + x2;
+      world->pop[j].status = A_ST_SURVIVED;
+    }
+  }
+  world->pop[i].status = A_ST_DEAD;
+}
+
+static void world_kill_if_old(world_t *world, int x, int y) {
+  int size_x = world->settings.board_size_x;
+  int size_y = world->settings.board_size_y;
+  int i = y * size_x + x;
+  int kill_area = world->settings.kill_area;
+  if (world->pop[i].status != A_ST_STRONG ||
+    world->pop[i].lifetime != 0)
+  {
+    return;
   }
   for (int dy = -kill_area; dy <= kill_area; ++dy) {
     for (int dx = -kill_area; dx <= kill_area; ++dx) {
@@ -112,6 +131,11 @@ void world_kill_weak(world_t *world) {
   for (int y = 0; y < world->settings.board_size_y; ++y) {
     for (int x = 0; x < world->settings.board_size_x; ++x) {
       world_kill_if_weak(world, x, y);
+    }
+  }
+  for (int y = 0; y < world->settings.board_size_y; ++y) {
+    for (int x = 0; x < world->settings.board_size_x; ++x) {
+      world_kill_if_old(world, x, y);
     }
   }
 }

@@ -8,8 +8,9 @@
 #include <stdio.h>
 
 #define A_ST_ALIVE    0
-#define A_ST_SURVIVED 1
-#define A_ST_DEAD     2
+#define A_ST_STRONG   1
+#define A_ST_SURVIVED 2
+#define A_ST_DEAD     3
 
 typedef struct state {
   unsigned short action;
@@ -22,12 +23,13 @@ typedef struct state {
 typedef struct automaton {
   int            score;
   unsigned short state_n;
+  unsigned short lifetime;
   char           status;
   unsigned       color;
   state_t       *states;
 } automaton_t;
 
-void automaton_init(automaton_t *a, unsigned short state_n, MTRand *rand);
+void automaton_init(automaton_t *a, const settings_t *settings, MTRand *rand);
 void automaton_destroy(automaton_t *a);
 
 void automaton_reset(automaton_t *a);

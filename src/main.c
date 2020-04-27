@@ -13,6 +13,7 @@
 #define DFLT_PLAY_AREA        3
 #define DFLT_KILL_AREA        2
 #define DFLT_CROSS_AREA       4
+#define DFLT_LIFETIME         200
 #define DFLT_STAT_REPORT_RATE 1
 #define DFLT_STAT_FLUSH_RATE  10
 #define DFLT_EXAMPLE_RATE     200
@@ -28,7 +29,7 @@
 /* ========================================================================= */
 /* Argument parsing */
 
-const char *argp_program_version = "trust 0.4.2";
+const char *argp_program_version = "trust 0.4.3";
 static const char doc[] =
   "Evolution of trust";
 
@@ -39,6 +40,7 @@ static const char doc[] =
 #define OPT_PLAY_AREA        'p'
 #define OPT_KILL_AREA        'k'
 #define OPT_CROSS_AREA       'c'
+#define OPT_LIFETIME         'l'
 #define OPT_STAT_FILE        'o'
 #define OPT_STAT_REPORT_RATE 'O'
 #define OPT_EXAMPLE_NAME     'x'
@@ -74,6 +76,9 @@ static struct argp_option options[] =
   , { "cross-area", OPT_CROSS_AREA, "SIZE", 0,
       "Specify the size of area, from which parents of the new automaton "
       "are selected (default is " STR(DFLT_CROSS_AREA) ")" }
+  , { "lifetime", OPT_LIFETIME, "N", 0,
+      "Specify the automaton lifetime "
+      "(default is " STR_(DFLT_LIFETIME) ")" }
   , { "stat-report-rate", OPT_STAT_REPORT_RATE, "N", 0,
       "Report statistics every N steps to a file "
       "(default is " STR(DFLT_STAT_REPORT_RATE) ")" }
@@ -145,6 +150,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
   case OPT_CROSS_AREA:
     check_arg_range(arg, &settings->cross_area, 1, MAX_AREA_SIZE, state,
       "The size of the cross area");
+    break;
+  case OPT_LIFETIME:
+    check_arg_range(arg, &settings->lifetime, 1, MAX_LIFETIME, state,
+      "Automaton lifetime");
     break;
   case OPT_STAT_REPORT_RATE:
     check_arg_range(arg, &settings->stat_report_rate, 1, MAX_REPORT_RATE,
@@ -228,6 +237,7 @@ int main(int argc, char **argv) {
       , .play_area        = DFLT_PLAY_AREA
       , .kill_area        = DFLT_KILL_AREA
       , .cross_area       = DFLT_CROSS_AREA
+      , .lifetime         = DFLT_LIFETIME
       , .stat_report_rate = DFLT_STAT_REPORT_RATE
       , .stat_flush_rate  = DFLT_STAT_FLUSH_RATE
       , .example_rate     = DFLT_EXAMPLE_RATE

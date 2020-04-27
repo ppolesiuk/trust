@@ -6,6 +6,7 @@
 #define MAX_STATE_N     10000
 #define MAX_STEP_N      200000000
 #define MAX_TURN_N      1000000
+#define MAX_LIFETIME    10000
 #define MAX_REPORT_RATE 1000000
 
 #define CHECK_OK   0
@@ -23,6 +24,7 @@ typedef struct settings {
   int           play_area;
   int           kill_area;
   int           cross_area;
+  int           lifetime;
   int           stat_report_rate;
   int           stat_flush_rate;
   int           example_rate;

@@ -4,22 +4,23 @@
 
 #define ACTION_RESOLUTION 1024
 
-void state_init(state_t *st, unsigned short state_n, MTRand *rand) {
+static void state_init(state_t *st, unsigned short state_n, MTRand *rand) {
   st->action = genRandLong(rand)%(ACTION_RESOLUTION + 1);
   for (int i = 0; i < 8; ++i) {
     st->next_tab[i] = genRandLong(rand)%state_n;
   }
 }
 
-void automaton_init(automaton_t *a, unsigned short state_n, MTRand *rand) {
-  a->score   = 0;
-  a->state_n = state_n;
-  a->status  = A_ST_ALIVE;
-  a->color   = genRandLong(rand) & 0xFFFFFF;
-  a->states  = malloc(sizeof(state_t) * state_n);
+void automaton_init(automaton_t *a, const settings_t *settings, MTRand *rand) {
+  a->score    = 0;
+  a->state_n  = settings->state_n;
+  a->lifetime = settings->lifetime;
+  a->status   = A_ST_ALIVE;
+  a->color    = genRandLong(rand) & 0xFFFFFF;
+  a->states   = malloc(sizeof(state_t) * a->state_n);
 
-  for (int i = 0; i < (int)state_n; ++i) {
-    state_init(&a->states[i], state_n, rand);
+  for (int i = 0; i < (int)a->state_n; ++i) {
+    state_init(&a->states[i], a->state_n, rand);
   }
 }
 
@@ -30,6 +31,9 @@ void automaton_destroy(automaton_t *a) {
 void automaton_reset(automaton_t *a) {
   a->score  = 0;
   a->status = A_ST_ALIVE;
+  if (a->lifetime > 0) {
+    a->lifetime--;
+  }
 }
 
 void automaton_play(
