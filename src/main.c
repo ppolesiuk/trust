@@ -6,23 +6,27 @@
 #define STR_(x) #x
 #define STR(x) STR_(x)
 
-#define DFLT_BOARD_SIZE       32
-#define DFLT_STATES           32
-#define DFLT_STEPS            10000
-#define DFLT_TURNS            16
-#define DFLT_PLAY_AREA        3
-#define DFLT_KILL_AREA        2
-#define DFLT_CROSS_AREA       4
-#define DFLT_LIFETIME         2000
-#define DFLT_STAT_REPORT_RATE 1
-#define DFLT_STAT_FLUSH_RATE  10
-#define DFLT_EXAMPLE_RATE     200
-#define DFLT_IMAGE_RATE       10
-#define DFLT_SEED             1337
-#define DFLT_MISTAKE_RATE     0.0
-#define DFLT_STAT_FILE        NULL
-#define DFLT_EXAMPLE_NAME     NULL
-#define DFLT_IMAGE_NAME       NULL
+#define DFLT_BOARD_SIZE          32
+#define DFLT_STATES              32
+#define DFLT_STEPS               0
+#define DFLT_TURNS               16
+#define DFLT_PLAY_AREA           3
+#define DFLT_KILL_AREA           2
+#define DFLT_CROSS_AREA          4
+#define DFLT_LIFETIME            2000
+#define DFLT_STAT_REPORT_RATE    1
+#define DFLT_STAT_FLUSH_RATE     10
+#define DFLT_EXAMPLE_RATE        200
+#define DFLT_IMAGE_RATE          10
+#define DFLT_SEED                1337
+#define DFLT_MISTAKE_RATE        0.0
+#define DFLT_CROSS_RATE          1.0
+#define DFLT_STATE_MUT_RATE      0.01
+#define DFLT_ACTION_MUT_RATE     0.01
+#define DFLT_EFGE_MUT_RATE       0.01
+#define DFLT_STAT_FILE           NULL
+#define DFLT_EXAMPLE_NAME        NULL
+#define DFLT_IMAGE_NAME          NULL
 
 #include "settings.h"
 #include "world.h"
@@ -30,30 +34,35 @@
 /* ========================================================================= */
 /* Argument parsing */
 
-const char *argp_program_version = "trust 0.4.5";
+const char *argp_program_version = "trust 0.5.0";
 static const char doc[] =
   "Evolution of trust";
 
-#define OPT_BOARD_SIZE       'b'
-#define OPT_STATES           's'
-#define OPT_STEPS            'n'
-#define OPT_TURNS            't'
-#define OPT_PLAY_AREA        'p'
-#define OPT_KILL_AREA        'k'
-#define OPT_CROSS_AREA       'c'
-#define OPT_LIFETIME         'l'
-#define OPT_STAT_FILE        'o'
-#define OPT_STAT_REPORT_RATE 'O'
-#define OPT_EXAMPLE_NAME     'x'
-#define OPT_EXAMPLE_RATE     'X'
-#define OPT_IMAGE_NAME       'i'
-#define OPT_IMAGE_RATE       'I'
-#define OPT_QUIET            'q'
-#define OPT_SPECIES_MAP      'M'
-#define OPT_DETERMINISTIC    'd'
-#define OPT_MISTAKE_AWARE    'a'
-#define OPT_MOVE_AWARE       'A'
-#define OPT_MISTAKE_RATE     'm'
+#define OPT_BOARD_SIZE          'b'
+#define OPT_STATES              's'
+#define OPT_STEPS               'n'
+#define OPT_TURNS               't'
+#define OPT_PLAY_AREA           'P'
+#define OPT_KILL_AREA           'K'
+#define OPT_CROSS_AREA          'C'
+#define OPT_LIFETIME            'l'
+#define OPT_STAT_FILE           'o'
+#define OPT_STAT_REPORT_RATE    'O'
+#define OPT_EXAMPLE_NAME        'x'
+#define OPT_EXAMPLE_RATE        'X'
+#define OPT_IMAGE_NAME          'i'
+#define OPT_IMAGE_RATE          'I'
+#define OPT_QUIET               'q'
+#define OPT_SPECIES_MAP         'M'
+#define OPT_DETERMINISTIC       'd'
+#define OPT_MISTAKE_AWARE       'a'
+#define OPT_MOVE_AWARE          'A'
+#define OPT_MISTAKE_RATE        'm'
+#define OPT_CROSS_RATE          'c'
+#define OPT_STATE_MUT_RATE      'S'
+#define OPT_ACTION_MUT_RATE     'T'
+#define OPT_EDGE_MUT_RATE       'E'
+#define OPT_SHOW_UNREACHABLE    'u'
 
 #define OPT_STAT_FLUSH_RATE  128
 #define OPT_NO_SPECIES_MAP   129
@@ -67,8 +76,8 @@ static struct argp_option options[] =
       "Specify the number of automaton states (default is "
       STR(DFLT_STATES) ")" }
   , { "steps", OPT_STEPS, "STEPS", 0,
-      "Specify the number of steps "
-      "(default is " STR(DFLT_STEPS) ", 0 means run indefinitely)" }
+      "Limit the number of simulation steps "
+      "(0 is default and means to run indefinitely)" }
   , { "turns", OPT_TURNS, "TURNS", 0,
       "Specify the number of turns per game "
       "(default is " STR(DFLT_TURNS) ")" }
@@ -120,6 +129,24 @@ static struct argp_option options[] =
   , { "mistake-rate", OPT_MISTAKE_RATE, "RATE", 0,
       "Specify the rate of mistakes "
       "(default is " STR(DFLT_MISTAKE_RATE) ")" }
+  , { "cross-rate", OPT_CROSS_RATE, "RATE", 0,
+      "Specify the probability, that new automaton is generated via crossing "
+      "instead of mutating "
+      "(default is " STR(DFLT_CROSS_RATE) ")" }
+  , { "state-mutation-rate", OPT_STATE_MUT_RATE, "RATE", 0,
+      "Specify the probability, that whole state is replaced by a new one "
+      "during mutation "
+      "(default is " STR(DFLT_STATE_MUT_RATE) ")" }
+  , { "action-mutation-rate", OPT_ACTION_MUT_RATE, "RATE", 0,
+      "Specify the probability, that single action is replaced by a new one "
+      "during mutation "
+      "(default is " STR(DFLT_ACTION_MUT_RATE) ")" }
+  , { "edge-mutation-rate", OPT_EDGE_MUT_RATE, "RATE", 0,
+      "Specify the probability, that single edge is replaced by a new one "
+      "during mutation "
+      "(default is " STR(DFLT_EDGE_MUT_RATE) ")" }
+  , { "show-unreachable-states", OPT_SHOW_UNREACHABLE, 0, 0,
+      "Show unreachable states in examample automatons" }
   , { 0 }
   };
 
@@ -221,6 +248,21 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
   case OPT_MISTAKE_RATE:
     settings->mistake_rate = atof(arg);
     break;
+  case OPT_CROSS_RATE:
+    settings->cross_rate = atof(arg);
+    break;
+  case OPT_STATE_MUT_RATE:
+    settings->state_mut_rate = atof(arg);
+    break;
+  case OPT_ACTION_MUT_RATE:
+    settings->action_mut_rate = atof(arg);
+    break;
+  case OPT_EDGE_MUT_RATE:
+    settings->edge_mut_rate = atof(arg);
+    break;
+  case OPT_SHOW_UNREACHABLE:
+    settings->flags |= F_SHOW_UNREACHABLE;
+    break;
   case ARGP_KEY_ARG:
     argp_usage(state);
     break;
@@ -255,25 +297,29 @@ static struct argp argp = { options, parse_opt, 0, doc, 0, 0, 0 };
 int main(int argc, char **argv) {
   world_t world =
     { .settings = 
-      { .board_size_x     = DFLT_BOARD_SIZE
-      , .board_size_y     = DFLT_BOARD_SIZE
-      , .state_n          = DFLT_STATES
-      , .step_n           = DFLT_STEPS
-      , .turn_n           = DFLT_TURNS
-      , .play_area        = DFLT_PLAY_AREA
-      , .kill_area        = DFLT_KILL_AREA
-      , .cross_area       = DFLT_CROSS_AREA
-      , .lifetime         = DFLT_LIFETIME
-      , .stat_report_rate = DFLT_STAT_REPORT_RATE
-      , .stat_flush_rate  = DFLT_STAT_FLUSH_RATE
-      , .example_rate     = DFLT_EXAMPLE_RATE
-      , .image_rate       = DFLT_IMAGE_RATE
-      , .flags            = 0
-      , .seed             = DFLT_SEED
-      , .mistake_rate     = DFLT_MISTAKE_RATE
-      , .stat_file        = DFLT_STAT_FILE
-      , .example_name     = DFLT_EXAMPLE_NAME
-      , .image_name       = DFLT_IMAGE_NAME
+      { .board_size_x       = DFLT_BOARD_SIZE
+      , .board_size_y       = DFLT_BOARD_SIZE
+      , .state_n            = DFLT_STATES
+      , .step_n             = DFLT_STEPS
+      , .turn_n             = DFLT_TURNS
+      , .play_area          = DFLT_PLAY_AREA
+      , .kill_area          = DFLT_KILL_AREA
+      , .cross_area         = DFLT_CROSS_AREA
+      , .lifetime           = DFLT_LIFETIME
+      , .stat_report_rate   = DFLT_STAT_REPORT_RATE
+      , .stat_flush_rate    = DFLT_STAT_FLUSH_RATE
+      , .example_rate       = DFLT_EXAMPLE_RATE
+      , .image_rate         = DFLT_IMAGE_RATE
+      , .flags              = 0
+      , .seed               = DFLT_SEED
+      , .mistake_rate       = DFLT_MISTAKE_RATE
+      , .cross_rate         = DFLT_CROSS_RATE
+      , .state_mut_rate     = DFLT_STATE_MUT_RATE
+      , .action_mut_rate    = DFLT_ACTION_MUT_RATE
+      , .edge_mut_rate      = DFLT_EFGE_MUT_RATE
+      , .stat_file          = DFLT_STAT_FILE
+      , .example_name       = DFLT_EXAMPLE_NAME
+      , .image_name         = DFLT_IMAGE_NAME
       }
     };
 

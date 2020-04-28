@@ -78,14 +78,13 @@ void automaton_play(
   }
 }
 
-static unsigned cross_color(unsigned c1, unsigned c2, MTRand *rand) {
-  int      x = genRandLong(rand) % 54;
-  unsigned c = (x & 1 ? c1 : c2);
-  int      r = (c & 0xFF)         + (x / 2) % 3 - 1;
+static unsigned mutate_color(unsigned c, MTRand *rand) {
+  int x = genRandLong(rand) % 27;
+  int r = (c & 0xFF) + x % 3 - 1;
+  int g = ((c >> 8)  & 0xFF) + (x / 3) % 3 - 1;
+  int b = ((c >> 16) & 0xFF) + (x / 9) - 1;
   r = (r < 0 ? 0 : r > 255 ? 255 : r);
-  int      g = ((c >> 8)  & 0xFF) + (x / 6) % 3 - 1;
   g = (g < 0 ? 0 : g > 255 ? 255 : g);
-  int      b = ((c >> 16) & 0xFF) + (x / 18) - 1;
   b = (b < 0 ? 0 : b > 255 ? 255 : b);
   return (b << 16) | (g << 8) | r;
 }
@@ -99,22 +98,31 @@ void automaton_cross(
 {
   int i;
   assert(a->state_n == p1->state_n && a->state_n == p2->state_n);
-  a->color = cross_color(p1->color, p2->color, rand);
-  a->lifetime = settings->lifetime;
+  a->lifetime = genRandLong(rand) % settings->lifetime;
+  if (genRand(rand) < settings->cross_rate) {
+    a->color = mutate_color(
+      (genRandLong(rand) % 2 == 0 ? p1->color : p2->color),
+      rand);
+    for (i = 0; i < (int)a->state_n; ++i) {
+      a->states[i] =
+        (genRandLong(rand) % 2 == 0 ? p1->states[i] : p2->states[i]);
+    }
+  } else {
+    a->color = mutate_color(p1->color, rand);
+    for (i = 0; i < (int)a->state_n; ++i) {
+      a->states[i] = p1->states[i];
+    }
+  }
   for (i = 0; i < (int)a->state_n; ++i) {
-    if (genRand(rand) < 0.01) {
+    if (genRand(rand) < settings->state_mut_rate) {
       state_init(&a->states[i], settings, rand);
       continue;
-    } else if (genRandLong(rand) % 2 == 0) {
-      a->states[i] = p1->states[i];
-    } else {
-      a->states[i] = p2->states[i];
     }
-    if (genRand(rand) < 0.01) {
+    if (genRand(rand) < settings->action_mut_rate) {
       a->states[i].action = rand_action(settings, rand);
     }
     for (int j = 0; j < 8; ++j) {
-      if (genRand(rand) < 0.01) {
+      if (genRand(rand) < settings->edge_mut_rate) {
         a->states[i].next_tab[j] = genRandLong(rand) % a->state_n;
       }
     }

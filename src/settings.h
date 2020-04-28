@@ -12,11 +12,12 @@
 #define CHECK_OK   0
 #define CHECK_FAIL 1
 
-#define F_QUIET         0x1
-#define F_SPECIES_MAP   0x2
-#define F_DETERMINISTIC 0x10
-#define F_MISTAKE_AWARE 0x20
-#define F_MOVE_AWARE    0x40
+#define F_QUIET            0x1
+#define F_SPECIES_MAP      0x2
+#define F_SHOW_UNREACHABLE 0x4
+#define F_DETERMINISTIC    0x10
+#define F_MISTAKE_AWARE    0x20
+#define F_MOVE_AWARE       0x40
 
 typedef struct settings {
   int           board_size_x;
@@ -35,6 +36,10 @@ typedef struct settings {
   int           flags;
   unsigned long seed;
   double        mistake_rate;
+  double        cross_rate;
+  double        state_mut_rate;
+  double        action_mut_rate;
+  double        edge_mut_rate;
   const char   *stat_file;
   const char   *example_name;
   const char   *image_name;
