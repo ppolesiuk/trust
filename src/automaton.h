@@ -47,6 +47,9 @@ void automaton_cross(
   const settings_t  *settings,
   MTRand            *rand);
 
-void automaton_print(FILE *file, const settings_t *settings, automaton_t *a);
+void automaton_print(
+  FILE              *file,
+  const settings_t  *settings,
+  const automaton_t *a);
 
 #endif

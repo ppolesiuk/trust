@@ -1,6 +1,7 @@
 #include "automaton.h"
 
 #include <assert.h>
+#include <string.h>
 
 #define ACTION_RESOLUTION 1024
 
@@ -129,17 +130,93 @@ void automaton_cross(
   }
 }
 
-void automaton_print(FILE *file, const settings_t *settings, automaton_t *a) {
+static void find_reachable_states(
+  const automaton_t *a,
+  const settings_t  *settings,
+  unsigned short *reachable)
+{
+  int st = 0;
+  int next;
+  reachable[st] = 1;
+  while (1) {
+    if ((settings->flags & F_MOVE_AWARE) == 0) {
+      next = a->states[st].next[0][0][0];
+      if (reachable[next] == 0) goto go_down;
+      next = a->states[st].next[0][0][1];
+      if (reachable[next] == 0) goto go_down;
+      if ((settings->flags & F_MISTAKE_AWARE)
+        && settings->mistake_rate > 0.0)
+      {
+        next = a->states[st].next[1][0][0];
+        if (reachable[next] == 0) goto go_down;
+        next = a->states[st].next[1][0][1];
+        if (reachable[next] == 0) goto go_down;
+      }
+    } else {
+      if (a->states[st].action != 0) {
+        next = a->states[st].next[0][1][0];
+        if (reachable[next] == 0) goto go_down;
+        next = a->states[st].next[0][1][1];
+        if (reachable[next] == 0) goto go_down;
+        if ((settings->flags & F_MISTAKE_AWARE)
+          && settings->mistake_rate > 0.0)
+        {
+          next = a->states[st].next[1][0][0];
+          if (reachable[next] == 0) goto go_down;
+          next = a->states[st].next[1][0][1];
+          if (reachable[next] == 0) goto go_down;
+        }
+      }
+      if (a->states[st].action != ACTION_RESOLUTION) {
+        next = a->states[st].next[0][0][0];
+        if (reachable[next] == 0) goto go_down;
+        next = a->states[st].next[0][0][1];
+        if (reachable[next] == 0) goto go_down;
+        if ((settings->flags & F_MISTAKE_AWARE)
+          && settings->mistake_rate > 0.0)
+        {
+          next = a->states[st].next[1][1][0];
+          if (reachable[next] == 0) goto go_down;
+          next = a->states[st].next[1][1][1];
+          if (reachable[next] == 0) goto go_down;
+        }
+      }
+    }
+    if (reachable[st] == 1) return;
+    st = reachable[st]-2;
+    continue;
+go_down:
+    reachable[next] = st+2;
+    st = next;
+  }
+}
+
+void automaton_print(
+  FILE              *file,
+  const settings_t  *settings,
+  const automaton_t *a)
+{
   int i;
+  unsigned short *reachable = malloc(sizeof(unsigned short) * a->state_n);
+  memset(reachable, 0, sizeof(unsigned short) * a->state_n);
+
+  find_reachable_states(a, settings, reachable);
+
   fprintf(file, "digraph automaton {\n");
   fprintf(file, "  node [shape = doublecircle, label = \"S%0.3f\"] ST_0;\n",
     (float)a->states[0].action / ACTION_RESOLUTION);
   for (i = 1; i < a->state_n; ++i) {
+    if ((settings->flags & F_SHOW_UNREACHABLE) == 0 && !reachable[i]) {
+      continue;
+    }
     fprintf(file, "  node [shape = circle, label = \"%0.3f\"] ST_%d;\n",
       (float)a->states[i].action / ACTION_RESOLUTION,
       i);
   }
   for (i = 0; i < a->state_n; ++i) {
+    if ((settings->flags & F_SHOW_UNREACHABLE) == 0 && !reachable[i]) {
+      continue;
+    }
     if ((settings->flags & F_MOVE_AWARE) == 0) {
       fprintf(file, "  ST_%d -> ST_%d [label = \"@0\"];\n",
         i, (int)a->states[i].next[0][0][0]);
@@ -185,4 +262,6 @@ void automaton_print(FILE *file, const settings_t *settings, automaton_t *a) {
     }
   }
   fprintf(file, "}\n");
+
+  free(reachable);
 }
