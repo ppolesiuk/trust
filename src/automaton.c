@@ -4,23 +4,31 @@
 
 #define ACTION_RESOLUTION 1024
 
-static void state_init(state_t *st, unsigned short state_n, MTRand *rand) {
-  st->action = genRandLong(rand)%(ACTION_RESOLUTION + 1);
+static unsigned short rand_action(const settings_t *settings, MTRand *rand) {
+  if ((settings->flags & F_DETERMINISTIC) == 0) {
+    return genRandLong(rand)%(ACTION_RESOLUTION + 1);
+  } else {
+    return (genRandLong(rand) & 1) * ACTION_RESOLUTION;
+  }
+}
+
+static void state_init(state_t *st, const settings_t *settings, MTRand *rand) {
+  st->action = rand_action(settings, rand);
   for (int i = 0; i < 8; ++i) {
-    st->next_tab[i] = genRandLong(rand)%state_n;
+    st->next_tab[i] = genRandLong(rand)%settings->state_n;
   }
 }
 
 void automaton_init(automaton_t *a, const settings_t *settings, MTRand *rand) {
   a->score    = 0;
   a->state_n  = settings->state_n;
-  a->lifetime = settings->lifetime;
+  a->lifetime = genRandLong(rand) % settings->lifetime;
   a->status   = A_ST_ALIVE;
   a->color    = genRandLong(rand) & 0xFFFFFF;
   a->states   = malloc(sizeof(state_t) * a->state_n);
 
   for (int i = 0; i < (int)a->state_n; ++i) {
-    state_init(&a->states[i], a->state_n, rand);
+    state_init(&a->states[i], settings, rand);
   }
 }
 
@@ -45,8 +53,8 @@ void automaton_play(
   int s1 = 0;
   int s2 = 0;
   for (int i = 0; i < settings->turn_n; i++) {
-    int err1 = (genRand(rand) < 0.01 ? 1 : 0);
-    int err2 = (genRand(rand) < 0.01 ? 1 : 0);
+    int err1 = (genRand(rand) < settings->mistake_rate ? 1 : 0);
+    int err2 = (genRand(rand) < settings->mistake_rate ? 1 : 0);
     int act1 =
       (genRandLong(rand)%ACTION_RESOLUTION < a1->states[s1].action ? 1 : 0);
     int act2 =
@@ -55,8 +63,18 @@ void automaton_play(
     act2 = (err2 ? 1-act2 : act2);
     a1->score += 3*act2 - act1;
     a2->score += 3*act1 - act2;
-    s1 = a1->states[s1].next[err1][act1][act2];
-    s2 = a2->states[s2].next[err2][act2][act1];
+    int own1 = act1;
+    int own2 = act2;
+    if ((settings->flags & F_MISTAKE_AWARE) == 0) {
+      err1 = 0;
+      err2 = 0;
+    }
+    if ((settings->flags & F_MOVE_AWARE) == 0) {
+      own1 = 0;
+      own2 = 0;
+    }
+    s1 = a1->states[s1].next[err1][own1][act2];
+    s2 = a2->states[s2].next[err2][own2][act1];
   }
 }
 
@@ -85,7 +103,7 @@ void automaton_cross(
   a->lifetime = settings->lifetime;
   for (i = 0; i < (int)a->state_n; ++i) {
     if (genRand(rand) < 0.01) {
-      state_init(&a->states[i], a->state_n, rand);
+      state_init(&a->states[i], settings, rand);
       continue;
     } else if (genRandLong(rand) % 2 == 0) {
       a->states[i] = p1->states[i];
@@ -93,7 +111,7 @@ void automaton_cross(
       a->states[i] = p2->states[i];
     }
     if (genRand(rand) < 0.01) {
-      a->states[i].action = genRandLong(rand)%(ACTION_RESOLUTION + 1);
+      a->states[i].action = rand_action(settings, rand);
     }
     for (int j = 0; j < 8; ++j) {
       if (genRand(rand) < 0.01) {
@@ -103,7 +121,7 @@ void automaton_cross(
   }
 }
 
-void automaton_print(FILE *file, automaton_t *a) {
+void automaton_print(FILE *file, const settings_t *settings, automaton_t *a) {
   int i;
   fprintf(file, "digraph automaton {\n");
   fprintf(file, "  node [shape = doublecircle, label = \"S%0.3f\"] ST_0;\n",
@@ -114,25 +132,48 @@ void automaton_print(FILE *file, automaton_t *a) {
       i);
   }
   for (i = 0; i < a->state_n; ++i) {
-    if (a->states[i].action != 0) {
-      fprintf(file, "  ST_%d -> ST_%d [label = \"_10\"];\n",
-        i, (int)a->states[i].next[0][1][0]);
-      fprintf(file, "  ST_%d -> ST_%d [label = \"_11\"];\n",
-        i, (int)a->states[i].next[0][1][1]);
-      fprintf(file, "  ST_%d -> ST_%d [label = \"!00\"];\n",
-        i, (int)a->states[i].next[1][0][0]);
-      fprintf(file, "  ST_%d -> ST_%d [label = \"!01\"];\n",
-        i, (int)a->states[i].next[1][0][1]);
-    }
-    if (a->states[i].action != ACTION_RESOLUTION) {
-      fprintf(file, "  ST_%d -> ST_%d [label = \"_00\"];\n",
+    if ((settings->flags & F_MOVE_AWARE) == 0) {
+      fprintf(file, "  ST_%d -> ST_%d [label = \"@0\"];\n",
         i, (int)a->states[i].next[0][0][0]);
-      fprintf(file, "  ST_%d -> ST_%d [label = \"_01\"];\n",
+      fprintf(file, "  ST_%d -> ST_%d [label = \"@1\"];\n",
         i, (int)a->states[i].next[0][0][1]);
-      fprintf(file, "  ST_%d -> ST_%d [label = \"!10\"];\n",
-        i, (int)a->states[i].next[1][1][0]);
-      fprintf(file, "  ST_%d -> ST_%d [label = \"!11\"];\n",
-        i, (int)a->states[i].next[1][1][1]);
+      if ((settings->flags & F_MISTAKE_AWARE)
+        && settings->mistake_rate > 0.0)
+      {
+        fprintf(file, "  ST_%d -> ST_%d [label = \"#0\"];\n",
+          i, (int)a->states[i].next[1][0][0]);
+        fprintf(file, "  ST_%d -> ST_%d [label = \"#1\"];\n",
+          i, (int)a->states[i].next[1][0][1]);
+      }
+    } else {
+      if (a->states[i].action != 0) {
+        fprintf(file, "  ST_%d -> ST_%d [label = \"@10\"];\n",
+          i, (int)a->states[i].next[0][1][0]);
+        fprintf(file, "  ST_%d -> ST_%d [label = \"@11\"];\n",
+          i, (int)a->states[i].next[0][1][1]);
+        if ((settings->flags & F_MISTAKE_AWARE)
+          && settings->mistake_rate > 0.0)
+        {
+          fprintf(file, "  ST_%d -> ST_%d [label = \"#00\"];\n",
+            i, (int)a->states[i].next[1][0][0]);
+          fprintf(file, "  ST_%d -> ST_%d [label = \"#01\"];\n",
+            i, (int)a->states[i].next[1][0][1]);
+        }
+      }
+      if (a->states[i].action != ACTION_RESOLUTION) {
+        fprintf(file, "  ST_%d -> ST_%d [label = \"@00\"];\n",
+          i, (int)a->states[i].next[0][0][0]);
+        fprintf(file, "  ST_%d -> ST_%d [label = \"@01\"];\n",
+          i, (int)a->states[i].next[0][0][1]);
+        if ((settings->flags & F_MISTAKE_AWARE)
+          && settings->mistake_rate > 0.0)
+        {
+          fprintf(file, "  ST_%d -> ST_%d [label = \"#10\"];\n",
+            i, (int)a->states[i].next[1][1][0]);
+          fprintf(file, "  ST_%d -> ST_%d [label = \"#11\"];\n",
+            i, (int)a->states[i].next[1][1][1]);
+        }
+      }
     }
   }
   fprintf(file, "}\n");

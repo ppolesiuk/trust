@@ -190,7 +190,7 @@ static void report_example_automaton(world_t *world) {
   sprintf(buf, "%s%lu.gv", world->settings.example_name, world->step);
   FILE *file = fopen(buf, "w");
   if (file) {
-    automaton_print(file, pick_example_automaton(world));
+    automaton_print(file, &world->settings, pick_example_automaton(world));
     fclose(file);
   } else {
     error(0, errno, "cannot open file `%s'", buf);

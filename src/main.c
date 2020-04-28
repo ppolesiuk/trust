@@ -19,6 +19,7 @@
 #define DFLT_EXAMPLE_RATE     200
 #define DFLT_IMAGE_RATE       10
 #define DFLT_SEED             1337
+#define DFLT_MISTAKE_RATE     0.0
 #define DFLT_STAT_FILE        NULL
 #define DFLT_EXAMPLE_NAME     NULL
 #define DFLT_IMAGE_NAME       NULL
@@ -29,7 +30,7 @@
 /* ========================================================================= */
 /* Argument parsing */
 
-const char *argp_program_version = "trust 0.4.4";
+const char *argp_program_version = "trust 0.4.5";
 static const char doc[] =
   "Evolution of trust";
 
@@ -48,7 +49,11 @@ static const char doc[] =
 #define OPT_IMAGE_NAME       'i'
 #define OPT_IMAGE_RATE       'I'
 #define OPT_QUIET            'q'
-#define OPT_SPECIES_MAP      'm'
+#define OPT_SPECIES_MAP      'M'
+#define OPT_DETERMINISTIC    'd'
+#define OPT_MISTAKE_AWARE    'a'
+#define OPT_MOVE_AWARE       'A'
+#define OPT_MISTAKE_RATE     'm'
 
 #define OPT_STAT_FLUSH_RATE  128
 #define OPT_NO_SPECIES_MAP   129
@@ -106,6 +111,15 @@ static struct argp_option options[] =
   , { "seed", OPT_SEED, "SEED", 0,
       "Set the seed of pseudo-random number generator "
       "(default is " STR(DFLT_SEED) ")" }
+  , { "deterministic", OPT_DETERMINISTIC, 0, 0,
+      "Use deterministic automatons" }
+  , { "mistake-aware", OPT_MISTAKE_AWARE, 0, 0,
+      "Use automatons that are aware of own mistakes" }
+  , { "move-aware", OPT_MOVE_AWARE, 0, 0,
+      "Use automatons that are aware of own random moves" }
+  , { "mistake-rate", OPT_MISTAKE_RATE, "RATE", 0,
+      "Specify the rate of mistakes "
+      "(default is " STR(DFLT_MISTAKE_RATE) ")" }
   , { 0 }
   };
 
@@ -195,6 +209,18 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
   case OPT_SEED:
     settings->seed = atol(arg);
     break;
+  case OPT_DETERMINISTIC:
+    settings->flags |= F_DETERMINISTIC;
+    break;
+  case OPT_MISTAKE_AWARE:
+    settings->flags |= F_MISTAKE_AWARE;
+    break;
+  case OPT_MOVE_AWARE:
+    settings->flags |= F_MOVE_AWARE;
+    break;
+  case OPT_MISTAKE_RATE:
+    settings->mistake_rate = atof(arg);
+    break;
   case ARGP_KEY_ARG:
     argp_usage(state);
     break;
@@ -244,6 +270,7 @@ int main(int argc, char **argv) {
       , .image_rate       = DFLT_IMAGE_RATE
       , .flags            = 0
       , .seed             = DFLT_SEED
+      , .mistake_rate     = DFLT_MISTAKE_RATE
       , .stat_file        = DFLT_STAT_FILE
       , .example_name     = DFLT_EXAMPLE_NAME
       , .image_name       = DFLT_IMAGE_NAME
