@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <signal.h>
 
 #define STR_(x) #x
 #define STR(x) STR_(x)
@@ -34,7 +35,7 @@
 /* ========================================================================= */
 /* Argument parsing */
 
-const char *argp_program_version = "trust 0.5.1";
+const char *trust_version = "trust 0.6.0";
 static const char doc[] =
   "Evolution of trust";
 
@@ -246,19 +247,19 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
     settings->flags |= F_MOVE_AWARE;
     break;
   case OPT_MISTAKE_RATE:
-    settings->mistake_rate = atof(arg);
+    settings->mistake_rate = fpoint(atof(arg));
     break;
   case OPT_CROSS_RATE:
-    settings->cross_rate = atof(arg);
+    settings->cross_rate = fpoint(atof(arg));
     break;
   case OPT_STATE_MUT_RATE:
-    settings->state_mut_rate = atof(arg);
+    settings->state_mut_rate = fpoint(atof(arg));
     break;
   case OPT_ACTION_MUT_RATE:
-    settings->action_mut_rate = atof(arg);
+    settings->action_mut_rate = fpoint(atof(arg));
     break;
   case OPT_EDGE_MUT_RATE:
-    settings->edge_mut_rate = atof(arg);
+    settings->edge_mut_rate = fpoint(atof(arg));
     break;
   case OPT_SHOW_UNREACHABLE:
     settings->flags |= F_SHOW_UNREACHABLE;
@@ -294,6 +295,14 @@ static void parse_size_opt(char *arg, struct argp_state *state) {
 
 static struct argp argp = { options, parse_opt, 0, doc, 0, 0, 0 };
 
+/* ========================================================================= */
+
+volatile static sig_atomic_t kill_received = 0;
+
+void kill_handler(int signo) {
+  kill_received = 1;
+}
+
 int main(int argc, char **argv) {
   world_t world =
     { .settings = 
@@ -312,11 +321,11 @@ int main(int argc, char **argv) {
       , .image_rate         = DFLT_IMAGE_RATE
       , .flags              = 0
       , .seed               = DFLT_SEED
-      , .mistake_rate       = DFLT_MISTAKE_RATE
-      , .cross_rate         = DFLT_CROSS_RATE
-      , .state_mut_rate     = DFLT_STATE_MUT_RATE
-      , .action_mut_rate    = DFLT_ACTION_MUT_RATE
-      , .edge_mut_rate      = DFLT_EFGE_MUT_RATE
+      , .mistake_rate       = fpoint(DFLT_MISTAKE_RATE)
+      , .cross_rate         = fpoint(DFLT_CROSS_RATE)
+      , .state_mut_rate     = fpoint(DFLT_STATE_MUT_RATE)
+      , .action_mut_rate    = fpoint(DFLT_ACTION_MUT_RATE)
+      , .edge_mut_rate      = fpoint(DFLT_EFGE_MUT_RATE)
       , .stat_file          = DFLT_STAT_FILE
       , .example_name       = DFLT_EXAMPLE_NAME
       , .image_name         = DFLT_IMAGE_NAME
@@ -325,8 +334,14 @@ int main(int argc, char **argv) {
 
   argp_parse(&argp, argc, argv, 0, 0, &world.settings);
 
+  signal(SIGINT, kill_handler);
+
   world_init(&world);
   do {
+    if (kill_received) {
+      world_serialize(&world);
+      break;
+    }
     world_reset(&world);
     world_play(&world);
     world_kill_weak(&world);
@@ -334,6 +349,9 @@ int main(int argc, char **argv) {
     world_report(&world);
   } while (world_next_step(&world));
 
+  if ((world.settings.flags & F_QUIET) == 0) {
+    printf("\n");
+  }
   world_destroy(&world);
   return 0;
 }

@@ -54,8 +54,8 @@ void automaton_play(
   int s1 = 0;
   int s2 = 0;
   for (int i = 0; i < settings->turn_n; i++) {
-    int err1 = (genRand(rand) < settings->mistake_rate ? 1 : 0);
-    int err2 = (genRand(rand) < settings->mistake_rate ? 1 : 0);
+    int err1 = (genRandFixed(rand) < settings->mistake_rate ? 1 : 0);
+    int err2 = (genRandFixed(rand) < settings->mistake_rate ? 1 : 0);
     int act1 =
       (genRandLong(rand)%ACTION_RESOLUTION < a1->states[s1].action ? 1 : 0);
     int act2 =
@@ -100,7 +100,7 @@ void automaton_cross(
   int i;
   assert(a->state_n == p1->state_n && a->state_n == p2->state_n);
   a->lifetime = genRandLong(rand) % settings->lifetime;
-  if (genRand(rand) < settings->cross_rate) {
+  if (genRandFixed(rand) < settings->cross_rate) {
     a->color = mutate_color(
       (genRandLong(rand) % 2 == 0 ? p1->color : p2->color),
       rand);
@@ -115,15 +115,15 @@ void automaton_cross(
     }
   }
   for (i = 0; i < (int)a->state_n; ++i) {
-    if (genRand(rand) < settings->state_mut_rate) {
+    if (genRandFixed(rand) < settings->state_mut_rate) {
       state_init(&a->states[i], settings, rand);
       continue;
     }
-    if (genRand(rand) < settings->action_mut_rate) {
+    if (genRandFixed(rand) < settings->action_mut_rate) {
       a->states[i].action = rand_action(settings, rand);
     }
     for (int j = 0; j < 8; ++j) {
-      if (genRand(rand) < settings->edge_mut_rate) {
+      if (genRandFixed(rand) < settings->edge_mut_rate) {
         a->states[i].next_tab[j] = genRandLong(rand) % a->state_n;
       }
     }
@@ -264,4 +264,24 @@ void automaton_print(
   fprintf(file, "}\n");
 
   free(reachable);
+}
+
+static void state_serialize(FILE *file, const state_t *st) {
+  fprintf(file, "#STATE\n");
+  fprintf(file, "action=%hu\n", st->action);
+  fprintf(file, "next=");
+  for (int i = 0; i < 8; ++i) {
+    fprintf(file, " %hu", st->next_tab[i]);
+  }
+  fprintf(file, "\n");
+}
+
+void automaton_serialize(FILE *file, const automaton_t *a) {
+  fprintf(file, "#AUTOMATON\n");
+  fprintf(file, "state_n=%hu\n", a->state_n);
+  fprintf(file, "lifetime=%hu\n", a->lifetime);
+  fprintf(file, "color=%x\n", a->color);
+  for (int i = 0; i < a->state_n; ++i) {
+    state_serialize(file, & a->states[i]);
+  }
 }

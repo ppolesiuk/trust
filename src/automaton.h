@@ -52,4 +52,6 @@ void automaton_print(
   const settings_t  *settings,
   const automaton_t *a);
 
+void automaton_serialize(FILE *file, const automaton_t *a);
+
 #endif

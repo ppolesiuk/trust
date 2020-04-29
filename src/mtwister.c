@@ -6,6 +6,9 @@
  * January pp.3-30 1998.
  *
  * http://www.sultanik.com/Mersenne_twister
+ *
+ * Apr, 2020 -- added fixed-point representation and serialization
+ *   author: Piotr Polesiuk
  */
 
 #define UPPER_MASK		0x80000000
@@ -73,4 +76,21 @@ unsigned long genRandLong(MTRand* rand) {
  */
 double genRand(MTRand* rand) {
   return((double)genRandLong(rand) / (unsigned long)0xffffffff);
+}
+
+unsigned long genRandFixed(MTRand *rand) {
+  return genRandLong(rand) & 0x7FFFFFFFul;
+}
+
+unsigned long fpoint(double x) {
+  return (unsigned long)(x * 0x80000000ul);
+}
+
+void serializeRand(FILE *file, const MTRand *rand) {
+  fprintf(file, "#RAND\n");
+  fprintf(file, "mt=");
+  for (int i = 0; i < STATE_VECTOR_LENGTH; ++i) {
+    fprintf(file, " %lx", rand->mt[i]);
+  }
+  fprintf(file, "\nindex=%d\n", rand->index);
 }

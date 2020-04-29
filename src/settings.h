@@ -1,6 +1,8 @@
 #ifndef __SETTINGS_H
 #define __SETTINGS_H
 
+#include <stdio.h>
+
 #define MAX_BOARD_SIZE  4096
 #define MAX_AREA_SIZE   2048
 #define MAX_STATE_N     10000
@@ -35,11 +37,11 @@ typedef struct settings {
   int           image_rate;
   int           flags;
   unsigned long seed;
-  double        mistake_rate;
-  double        cross_rate;
-  double        state_mut_rate;
-  double        action_mut_rate;
-  double        edge_mut_rate;
+  unsigned long mistake_rate;
+  unsigned long cross_rate;
+  unsigned long state_mut_rate;
+  unsigned long action_mut_rate;
+  unsigned long edge_mut_rate;
   const char   *stat_file;
   const char   *example_name;
   const char   *image_name;
@@ -55,5 +57,7 @@ typedef enum parse_size_result {
 } parse_size_result_t;
 
 parse_size_result_t parse_size(const char *str, settings_t *settings);
+
+void settings_serialize(FILE *file, const settings_t *settings);
 
 #endif

@@ -5,7 +5,7 @@
 #include <error.h>
 #include <string.h>
 
-static int board_size(world_t *world) {
+static int board_size(const world_t *world) {
   return world->settings.board_size_x * world->settings.board_size_y;
 }
 
@@ -237,4 +237,35 @@ int world_next_step(world_t *world) {
   world->step++;
   return world->settings.step_n == 0
       || world->step < world->settings.step_n;
+}
+
+#define TMP_WORLD_FILE ".world_new"
+#define WORLD_FILE "world"
+
+extern const char *trust_version;
+
+static void world_serialize_main(FILE *file, const world_t *world) {
+  fprintf(file, "#WORLD\n");
+  fprintf(file, "step=%lu\n", world->step);
+  for (int i = 0; i < board_size(world); ++i) {
+    automaton_serialize(file, &world->pop[i]);
+  }
+}
+
+void world_serialize(const world_t *world) {
+  FILE *file = fopen(TMP_WORLD_FILE, "w");
+  if (file == NULL) {
+    error(0, errno, "cannot open world file `%s'", TMP_WORLD_FILE);
+    return;
+  }
+
+  fprintf(file, "%s\n", trust_version);
+  settings_serialize(file, &world->settings);
+  world_serialize_main(file, world);
+  serializeRand(file, &world->rand);
+
+  fclose(file);
+  if (rename(TMP_WORLD_FILE, WORLD_FILE)) {
+    error(0, errno, "cannot move world file to `%s'", WORLD_FILE);
+  }
 }
