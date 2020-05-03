@@ -98,7 +98,7 @@ $ ./trust       \
 - `-t 50` specifies the number of turns in each game.
 
 The programs backups its state to `world` file from time to time (every 1000
-simulation steps by default) or when it gets `SIGTERM` signal. So in case of
+simulation steps by default) or when it gets `SIGINT` signal. So in case of
 e.g., power failure you can continue from the backup. In order to do so, pass
 `--continue` option to the program (other options are ignored in such a case).
 
