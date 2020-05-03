@@ -45,13 +45,13 @@ below.
 ```
 $ ./trust       \
     -o stat.dat \
-	-i img_     \
-	-x a_       \
-	-b 64x64    \
-	-m 0.03     \
-	-d -a -A    \
-	-s 20       \
-	-t 50       \
+    -i img_     \
+    -x a_       \
+    -b 64x64    \
+    -m 0.03     \
+    -d -a -A    \
+    -s 20       \
+    -t 50       \
 ```
 
 - `-o stat.dat` specifies the name of the file, where the average final score
@@ -62,12 +62,12 @@ $ ./trust       \
   a PNG image (automatons are placed on 2D plane). In this example such images
   would have names `img_0.png`, `img_10.png`, `img_20.png`, ... (the number in
   the file name is the number of simulation steps). You can generate a movie
-  from those file using, e.g., `ffmpeg`:
+  from those files using, e.g., `ffmpeg`:
   ```
   $ ffmpeg -f image2 -i img_%d0.png movie.mp4
   ```
 
-- `-x a_`, specifies names of files, where randomly picked automatons will be
+- `-x a_`, specifies names of files, where randomly picked automata will be
   saved as Graphviz script. In this example they would be saves as `a_0.gv`,
   `a_200.gv`, `a_400.gv`, ... `draw_automaton.sh` script can transform them to
   PNG images using Graphviz.
