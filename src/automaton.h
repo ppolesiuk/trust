@@ -53,5 +53,6 @@ void automaton_print(
   const automaton_t *a);
 
 void automaton_serialize(FILE *file, const automaton_t *a);
+void automaton_deserialize(FILE *file, automaton_t *a);
 
 #endif

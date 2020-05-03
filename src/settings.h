@@ -3,6 +3,8 @@
 
 #include <stdio.h>
 
+#define TRUST_VERSION "0.6.1"
+
 #define MAX_BOARD_SIZE  4096
 #define MAX_AREA_SIZE   2048
 #define MAX_STATE_N     10000
@@ -59,5 +61,6 @@ typedef enum parse_size_result {
 parse_size_result_t parse_size(const char *str, settings_t *settings);
 
 void settings_serialize(FILE *file, const settings_t *settings);
+void settings_deserialize(FILE *file, settings_t *settings);
 
 #endif

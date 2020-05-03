@@ -35,7 +35,7 @@
 /* ========================================================================= */
 /* Argument parsing */
 
-const char *trust_version = "trust 0.6.0";
+const char *argp_program_version = "trust " TRUST_VERSION;
 static const char doc[] =
   "Evolution of trust";
 
@@ -68,6 +68,7 @@ static const char doc[] =
 #define OPT_STAT_FLUSH_RATE  128
 #define OPT_NO_SPECIES_MAP   129
 #define OPT_SEED             130
+#define OPT_CONTINUE         131
 
 static struct argp_option options[] =
   { { "board-size", OPT_BOARD_SIZE, "SIZE", 0,
@@ -148,8 +149,12 @@ static struct argp_option options[] =
       "(default is " STR(DFLT_EDGE_MUT_RATE) ")" }
   , { "show-unreachable-states", OPT_SHOW_UNREACHABLE, 0, 0,
       "Show unreachable states in examample automatons" }
+  , { "continue", OPT_CONTINUE, 0, 0,
+      "Continue from the saved state. Other options are ignored" }
   , { 0 }
   };
+
+static int should_continue = 0;
 
 static void parse_size_opt(char *arg, struct argp_state *state);
 
@@ -210,7 +215,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
       state, "The rate");
     break;
   case OPT_IMAGE_RATE:
-    check_arg_range(arg, &settings->example_rate, 1, MAX_REPORT_RATE,
+    check_arg_range(arg, &settings->image_rate, 1, MAX_REPORT_RATE,
       state, "The rate");
     break;
   case OPT_STAT_FILE:
@@ -263,6 +268,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
     break;
   case OPT_SHOW_UNREACHABLE:
     settings->flags |= F_SHOW_UNREACHABLE;
+    break;
+  case OPT_CONTINUE:
+    should_continue = 1;
     break;
   case ARGP_KEY_ARG:
     argp_usage(state);
@@ -333,10 +341,14 @@ int main(int argc, char **argv) {
     };
 
   argp_parse(&argp, argc, argv, 0, 0, &world.settings);
+  if (should_continue) {
+    world_deserialize(&world);
+  } else {
+    world_init(&world);
+  }
 
   signal(SIGINT, kill_handler);
 
-  world_init(&world);
   do {
     if (kill_received) {
       world_serialize(&world);

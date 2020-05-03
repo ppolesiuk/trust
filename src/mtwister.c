@@ -18,6 +18,8 @@
 
 #include "mtwister.h"
 
+#include "serialization.h"
+
 inline void m_seedRand(MTRand* rand, unsigned long seed) {
   /* set initial seeds to mt[STATE_VECTOR_LENGTH] using the generator
    * from Line 25 of Table 1 in: Donald Knuth, "The Art of Computer
@@ -87,10 +89,13 @@ unsigned long fpoint(double x) {
 }
 
 void serializeRand(FILE *file, const MTRand *rand) {
-  fprintf(file, "#RAND\n");
-  fprintf(file, "mt=");
-  for (int i = 0; i < STATE_VECTOR_LENGTH; ++i) {
-    fprintf(file, " %lx", rand->mt[i]);
-  }
-  fprintf(file, "\nindex=%d\n", rand->index);
+  serialize_tag(file, "RAND");
+  SERIALIZE_ULONG_TAB(file, rand, mt, STATE_VECTOR_LENGTH);
+  SERIALIZE_INT(file, rand, index);
+}
+
+void deserializeRand(FILE *file, MTRand *rand) {
+  deserialize_tag(file, "RAND");
+  DESERIALIZE_ULONG_TAB(file, rand, mt, STATE_VECTOR_LENGTH, 0, 0xFFFFFFFF);
+  DESERIALIZE_INT(file, rand, index, 0, STATE_VECTOR_LENGTH);
 }

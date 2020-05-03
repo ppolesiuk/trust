@@ -1,5 +1,7 @@
 #include "automaton.h"
 
+#include "serialization.h"
+
 #include <assert.h>
 #include <string.h>
 
@@ -267,21 +269,34 @@ void automaton_print(
 }
 
 static void state_serialize(FILE *file, const state_t *st) {
-  fprintf(file, "#STATE\n");
-  fprintf(file, "action=%hu\n", st->action);
-  fprintf(file, "next=");
-  for (int i = 0; i < 8; ++i) {
-    fprintf(file, " %hu", st->next_tab[i]);
-  }
-  fprintf(file, "\n");
+  serialize_tag(file, "STATE");
+  SERIALIZE_USHORT(file, st, action);
+  SERIALIZE_USHORT_TAB(file, st, next_tab, 8);
+}
+
+static void state_deserialize(FILE *file, state_t *st, int state_n) {
+  deserialize_tag(file, "STATE");
+  DESERIALIZE_USHORT(file, st, action, 0, ACTION_RESOLUTION);
+  DESERIALIZE_USHORT_TAB(file, st, next_tab, 8, 0, state_n - 1);
 }
 
 void automaton_serialize(FILE *file, const automaton_t *a) {
-  fprintf(file, "#AUTOMATON\n");
-  fprintf(file, "state_n=%hu\n", a->state_n);
-  fprintf(file, "lifetime=%hu\n", a->lifetime);
-  fprintf(file, "color=%x\n", a->color);
+  serialize_tag(file, "AUTOMATON");
+  SERIALIZE_USHORT(file, a, state_n);
+  SERIALIZE_USHORT(file, a, lifetime);
+  SERIALIZE_UINT(file, a, color);
   for (int i = 0; i < a->state_n; ++i) {
-    state_serialize(file, & a->states[i]);
+    state_serialize(file, &a->states[i]);
+  }
+}
+
+void automaton_deserialize(FILE *file, automaton_t *a) {
+  deserialize_tag(file, "AUTOMATON");
+  DESERIALIZE_USHORT(file, a, state_n, 1, MAX_STATE_N);
+  DESERIALIZE_USHORT(file, a, lifetime, 0, MAX_LIFETIME);
+  DESERIALIZE_UINT(file, a, color, 0, 0xFFFFFF);
+  a->states = malloc(sizeof(state_t) * a->state_n);
+  for (int i = 0; i < a->state_n; ++i) {
+    state_deserialize(file, &a->states[i], a->state_n);
   }
 }

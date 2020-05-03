@@ -7,7 +7,8 @@ LDFLAGS += -lpng
 
 .PHONY: all clean
 
-SRCS=automaton.c main.c mtwister.c settings.c world.c world_image.c
+SRCS=automaton.c main.c mtwister.c serialization.c settings.c world.c \
+	world_image.c
 
 OBJS=$(patsubst %, $(BLDDIR)/%.o, $(basename $(SRCS)))
 
@@ -29,5 +30,5 @@ $(BLDDIR)/%.d: $(BLDDIR) ;
 include $(wildcard $(patsubst %, $(BLDDIR)/%.d, $(basename $(SRCS))))
 
 clean:
-	rm -f $(BLDDIR)/*.o $(BLDDIR)/*.d target
+	rm -f $(BLDDIR)/*.o $(BLDDIR)/*.d $(TARGET)
 	rmdir $(BLDDIR)

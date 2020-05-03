@@ -1,31 +1,38 @@
 #include "world.h"
 #include "world_image.h"
+#include "serialization.h"
 
 #include <errno.h>
 #include <error.h>
+#include <limits.h>
 #include <string.h>
 
 static int board_size(const world_t *world) {
   return world->settings.board_size_x * world->settings.board_size_y;
 }
 
-void world_init(world_t *world) {
-  world->rand = seedRand(world->settings.seed);
-  world->pop  = malloc(sizeof(automaton_t) * board_size(world));
-  world->step = 0;
-  for (int i = 0; i < board_size(world); ++i) {
-    automaton_init(&world->pop[i], &world->settings, &world->rand);
-  }
+static void world_basic_init(world_t *world, int continued) {
+  world->pop = malloc(sizeof(automaton_t) * board_size(world));
   if (world->settings.stat_file == NULL) {
     world->stat_file = NULL;
   } else if (strcmp(world->settings.stat_file, "-") == 0) {
     world->stat_file = stdout;
   } else {
-    world->stat_file = fopen(world->settings.stat_file, "wt");
+    world->stat_file =
+      fopen(world->settings.stat_file, (continued ? "at" : "wt"));
     if (world->stat_file == NULL) {
       error(EXIT_FAILURE, errno, "cannot open file `%s'",
         world->settings.stat_file);
     }
+  }
+}
+
+void world_init(world_t *world) {
+  world_basic_init(world, 0);
+  world->rand = seedRand(world->settings.seed);
+  world->step = 0;
+  for (int i = 0; i < board_size(world); ++i) {
+    automaton_init(&world->pop[i], &world->settings, &world->rand);
   }
 }
 
@@ -242,13 +249,19 @@ int world_next_step(world_t *world) {
 #define TMP_WORLD_FILE ".world_new"
 #define WORLD_FILE "world"
 
-extern const char *trust_version;
-
 static void world_serialize_main(FILE *file, const world_t *world) {
-  fprintf(file, "#WORLD\n");
-  fprintf(file, "step=%lu\n", world->step);
+  serialize_tag(file, "WORLD");
+  SERIALIZE_ULONG(file, world, step);
   for (int i = 0; i < board_size(world); ++i) {
     automaton_serialize(file, &world->pop[i]);
+  }
+} 
+
+static void world_deserialize_main(FILE *file, world_t *world) {
+  deserialize_tag(file, "WORLD");
+  DESERIALIZE_ULONG(file, world, step, 0, ULONG_MAX);
+  for (int i = 0; i < board_size(world); ++i) {
+    automaton_deserialize(file, &world->pop[i]);
   }
 }
 
@@ -259,7 +272,7 @@ void world_serialize(const world_t *world) {
     return;
   }
 
-  fprintf(file, "%s\n", trust_version);
+  serialize_version(file, "trust_version", TRUST_VERSION);
   settings_serialize(file, &world->settings);
   world_serialize_main(file, world);
   serializeRand(file, &world->rand);
@@ -268,4 +281,20 @@ void world_serialize(const world_t *world) {
   if (rename(TMP_WORLD_FILE, WORLD_FILE)) {
     error(0, errno, "cannot move world file to `%s'", WORLD_FILE);
   }
+}
+
+void world_deserialize(world_t *world) {
+  FILE *file = fopen(WORLD_FILE, "r");
+  if (file == NULL) {
+    error(EXIT_FAILURE, errno, "cannot open world file `%s'", TMP_WORLD_FILE);
+    return;
+  }
+
+  deserialize_version(file, "trust_version", TRUST_VERSION);
+  settings_deserialize(file, &world->settings);
+  world_basic_init(world, 1);
+  world_deserialize_main(file, world);
+  deserializeRand(file, &world->rand);
+
+  fclose(file);
 }

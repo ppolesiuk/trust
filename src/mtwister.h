@@ -13,12 +13,13 @@ typedef struct tagMTRand {
 
 MTRand seedRand(unsigned long seed);
 unsigned long genRandLong(MTRand* rand);
-/* double genRand(MTRand* rand); */
+double genRand(MTRand* rand);
 
 /* fixed-point representation */
 unsigned long genRandFixed(MTRand *rand);
 unsigned long fpoint(double x);
 
 void serializeRand(FILE *file, const MTRand *rand);
+void deserializeRand(FILE *file, MTRand *rand);
 
 #endif /* #ifndef __MTWISTER_H */
