@@ -77,6 +77,7 @@ void settings_serialize(FILE *file, const settings_t *settings) {
   SERIALIZE_INT(file, settings, stat_flush_rate);
   SERIALIZE_INT(file, settings, example_rate);
   SERIALIZE_INT(file, settings, image_rate);
+  SERIALIZE_INT(file, settings, backup_rate);
   SERIALIZE_INT(file, settings, flags);
   SERIALIZE_ULONG(file, settings, seed);
   SERIALIZE_ULONG(file, settings, mistake_rate);
@@ -104,6 +105,7 @@ void settings_deserialize(FILE *file, settings_t *settings) {
   DESERIALIZE_INT(file, settings, stat_flush_rate, 1, MAX_REPORT_RATE);
   DESERIALIZE_INT(file, settings, example_rate, 1, MAX_REPORT_RATE);
   DESERIALIZE_INT(file, settings, image_rate, 1, MAX_REPORT_RATE);
+  DESERIALIZE_INT(file, settings, backup_rate, 1, MAX_REPORT_RATE);
   DESERIALIZE_INT(file, settings, flags, 0, INT_MAX);
   DESERIALIZE_ULONG(file, settings, seed, 0, ULONG_MAX);
   DESERIALIZE_ULONG(file, settings, mistake_rate, 0, ULONG_MAX);

@@ -19,9 +19,10 @@
 #define DFLT_STAT_FLUSH_RATE     10
 #define DFLT_EXAMPLE_RATE        200
 #define DFLT_IMAGE_RATE          10
+#define DFLT_BACKUP_RATE         1000
 #define DFLT_SEED                1337
 #define DFLT_MISTAKE_RATE        0.0
-#define DFLT_CROSS_RATE          1.0
+#define DFLT_CROSS_RATE          0.0
 #define DFLT_STATE_MUT_RATE      0.01
 #define DFLT_ACTION_MUT_RATE     0.01
 #define DFLT_EFGE_MUT_RATE       0.01
@@ -69,6 +70,7 @@ static const char doc[] =
 #define OPT_NO_SPECIES_MAP   129
 #define OPT_SEED             130
 #define OPT_CONTINUE         131
+#define OPT_BACKUP_RATE      132
 
 static struct argp_option options[] =
   { { "board-size", OPT_BOARD_SIZE, "SIZE", 0,
@@ -151,6 +153,8 @@ static struct argp_option options[] =
       "Show unreachable states in examample automatons" }
   , { "continue", OPT_CONTINUE, 0, 0,
       "Continue from the saved state. Other options are ignored" }
+  , { "backup-rate", OPT_BACKUP_RATE, "N", 0,
+      "Backup state every N steps (default is 1000)" }
   , { 0 }
   };
 
@@ -272,6 +276,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
   case OPT_CONTINUE:
     should_continue = 1;
     break;
+  case OPT_BACKUP_RATE:
+    check_arg_range(arg, &settings->backup_rate, 1, MAX_REPORT_RATE,
+      state, "The rate");
+    break;
   case ARGP_KEY_ARG:
     argp_usage(state);
     break;
@@ -327,6 +335,7 @@ int main(int argc, char **argv) {
       , .stat_flush_rate    = DFLT_STAT_FLUSH_RATE
       , .example_rate       = DFLT_EXAMPLE_RATE
       , .image_rate         = DFLT_IMAGE_RATE
+      , .backup_rate        = DFLT_BACKUP_RATE
       , .flags              = 0
       , .seed               = DFLT_SEED
       , .mistake_rate       = fpoint(DFLT_MISTAKE_RATE)
@@ -353,6 +362,9 @@ int main(int argc, char **argv) {
     if (kill_received) {
       world_serialize(&world);
       break;
+    }
+    if (world.step %world.settings.backup_rate == 0) {
+      world_serialize(&world);
     }
     world_reset(&world);
     world_play(&world);

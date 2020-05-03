@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#define TRUST_VERSION "0.6.1"
+#define TRUST_VERSION "0.6.2"
 
 #define MAX_BOARD_SIZE  4096
 #define MAX_AREA_SIZE   2048
@@ -37,6 +37,7 @@ typedef struct settings {
   int           stat_flush_rate;
   int           example_rate;
   int           image_rate;
+  int           backup_rate;
   int           flags;
   unsigned long seed;
   unsigned long mistake_rate;
