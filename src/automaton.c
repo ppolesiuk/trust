@@ -58,26 +58,24 @@ void automaton_play(
   for (int i = 0; i < settings->turn_n; i++) {
     int err1 = (genRandFixed(rand) < settings->mistake_rate ? 1 : 0);
     int err2 = (genRandFixed(rand) < settings->mistake_rate ? 1 : 0);
-    int act1 =
+    int dec1 =
       (genRandLong(rand)%ACTION_RESOLUTION < a1->states[s1].action ? 1 : 0);
-    int act2 =
+    int dec2 =
       (genRandLong(rand)%ACTION_RESOLUTION < a2->states[s2].action ? 1 : 0);
-    act1 = (err1 ? 1-act1 : act1);
-    act2 = (err2 ? 1-act2 : act2);
+    int act1 = err1 ^ dec1;
+    int act2 = err2 ^ dec2;
     a1->score += 3*act2 - act1;
     a2->score += 3*act1 - act2;
-    int own1 = act1;
-    int own2 = act2;
     if ((settings->flags & F_MISTAKE_AWARE) == 0) {
       err1 = 0;
       err2 = 0;
     }
-    if ((settings->flags & F_MOVE_AWARE) == 0) {
-      own1 = 0;
-      own2 = 0;
+    if ((settings->flags & F_DECISION_AWARE) == 0) {
+      dec1 = 0;
+      dec2 = 0;
     }
-    s1 = a1->states[s1].next[err1][own1][act2];
-    s2 = a2->states[s2].next[err2][own2][act1];
+    s1 = a1->states[s1].next[err1][dec1][act2];
+    s2 = a2->states[s2].next[err2][dec2][act1];
   }
 }
 
@@ -141,7 +139,7 @@ static void find_reachable_states(
   int next;
   reachable[st] = 1;
   while (1) {
-    if ((settings->flags & F_MOVE_AWARE) == 0) {
+    if ((settings->flags & F_DECISION_AWARE) == 0) {
       next = a->states[st].next[0][0][0];
       if (reachable[next] == 0) goto go_down;
       next = a->states[st].next[0][0][1];
@@ -163,9 +161,9 @@ static void find_reachable_states(
         if ((settings->flags & F_MISTAKE_AWARE)
           && settings->mistake_rate > 0.0)
         {
-          next = a->states[st].next[1][0][0];
+          next = a->states[st].next[1][1][0];
           if (reachable[next] == 0) goto go_down;
-          next = a->states[st].next[1][0][1];
+          next = a->states[st].next[1][1][1];
           if (reachable[next] == 0) goto go_down;
         }
       }
@@ -177,9 +175,9 @@ static void find_reachable_states(
         if ((settings->flags & F_MISTAKE_AWARE)
           && settings->mistake_rate > 0.0)
         {
-          next = a->states[st].next[1][1][0];
+          next = a->states[st].next[1][0][0];
           if (reachable[next] == 0) goto go_down;
-          next = a->states[st].next[1][1][1];
+          next = a->states[st].next[1][0][1];
           if (reachable[next] == 0) goto go_down;
         }
       }
@@ -219,7 +217,7 @@ void automaton_print(
     if ((settings->flags & F_SHOW_UNREACHABLE) == 0 && !reachable[i]) {
       continue;
     }
-    if ((settings->flags & F_MOVE_AWARE) == 0) {
+    if ((settings->flags & F_DECISION_AWARE) == 0) {
       fprintf(file, "  ST_%d -> ST_%d [label = \"@0\"];\n",
         i, (int)a->states[i].next[0][0][0]);
       fprintf(file, "  ST_%d -> ST_%d [label = \"@1\"];\n",
@@ -241,10 +239,10 @@ void automaton_print(
         if ((settings->flags & F_MISTAKE_AWARE)
           && settings->mistake_rate > 0.0)
         {
-          fprintf(file, "  ST_%d -> ST_%d [label = \"#00\"];\n",
-            i, (int)a->states[i].next[1][0][0]);
-          fprintf(file, "  ST_%d -> ST_%d [label = \"#01\"];\n",
-            i, (int)a->states[i].next[1][0][1]);
+          fprintf(file, "  ST_%d -> ST_%d [label = \"#10\"];\n",
+            i, (int)a->states[i].next[1][1][0]);
+          fprintf(file, "  ST_%d -> ST_%d [label = \"#11\"];\n",
+            i, (int)a->states[i].next[1][1][1]);
         }
       }
       if (a->states[i].action != ACTION_RESOLUTION) {
@@ -255,10 +253,10 @@ void automaton_print(
         if ((settings->flags & F_MISTAKE_AWARE)
           && settings->mistake_rate > 0.0)
         {
-          fprintf(file, "  ST_%d -> ST_%d [label = \"#10\"];\n",
-            i, (int)a->states[i].next[1][1][0]);
-          fprintf(file, "  ST_%d -> ST_%d [label = \"#11\"];\n",
-            i, (int)a->states[i].next[1][1][1]);
+          fprintf(file, "  ST_%d -> ST_%d [label = \"#00\"];\n",
+            i, (int)a->states[i].next[1][0][0]);
+          fprintf(file, "  ST_%d -> ST_%d [label = \"#01\"];\n",
+            i, (int)a->states[i].next[1][0][1]);
         }
       }
     }
